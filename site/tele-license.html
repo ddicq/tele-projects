@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tele License — реестр безопасных ресурсов Telegram</title>
-<meta name="description" content="Tele License: реестр публичных каналов, чатов и ботов Telegram, прошедших проверку. Подача заявки, проверка лицензии, жалобы.">
+<title data-i18n="k34">Tele License — реестр безопасных ресурсов Telegram</title>
+<meta name="description" content="Tele License: реестр публичных каналов, чатов и ботов Telegram, прошедших проверку. Подача заявки, проверка лицензии, жалобы." data-i18n="k35" data-i18n-attr="content">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -13,24 +13,31 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css">
+<script src="/js/config.js" defer></script>
+<script src="/js/en.js" defer></script>
+<script src="/js/i18n.js" defer></script>
+<script src="/js/app.js" defer></script>
 </head>
 <body>
 <header class="site-header"><div class="wrap bar">
-  <a class="brand" href="/"><span class="mark">TP</span>TeleProjects</a>
-  <nav aria-label="Основное меню">
-    <a href="/">Главная</a>
+  <a class="brand" href="/"><span class="mark">TP</span><span class="bn">TeleProjects</span></a>
+  <nav aria-label="Основное меню" data-i18n="k36" data-i18n-attr="aria-label">
+    <a href="/" data-i18n="k37">Главная</a>
     <a href="/tele-license" aria-current="page">Tele License</a>
   </nav>
+  <div class="lang" role="group" aria-label="Language">
+    <button type="button" data-lang="ru">RU</button><button type="button" data-lang="en">EN</button>
+  </div>
 </div></header>
 <main>
 <section class="page-head"><div class="wrap">
-  <span class="pill"><i></i>Проект TeleProjects</span>
+  <span class="pill"><i></i><span data-i18n="k38">Проект TeleProjects</span></span>
   <h1>Tele License</h1>
-  <p>Реестр публичных каналов, чатов и ботов Telegram, которые прошли проверку модераторами и соответствуют правилам проекта.</p>
-  <nav class="tabs" id="tabs" aria-label="Разделы проекта">
-    <a href="#about" data-tab="about">О проекте</a>
-    <a href="#registry" data-tab="registry">Реестр</a>
-    <a href="#rules" data-tab="rules">Правила</a>
+  <p data-i18n="k39">Реестр публичных каналов, чатов и ботов Telegram, которые прошли проверку модераторами и соответствуют правилам проекта.</p>
+  <nav class="tabs" id="tabs" aria-label="Разделы проекта" data-i18n="k40" data-i18n-attr="aria-label">
+    <a href="#about" data-tab="about" data-i18n="k41">О проекте</a>
+    <a href="#registry" data-tab="registry" data-i18n="k42">Реестр</a>
+    <a href="#rules" data-tab="rules" data-i18n="k43">Правила</a>
   </nav>
 </div></section>
 
@@ -39,73 +46,73 @@
 <section class="tab-panel" id="tab-about">
   <div class="two">
     <div>
-      <h2>Как это работает</h2>
+      <h2 data-i18n="k44">Как это работает</h2>
       <ol class="steps">
-        <li><em>1</em><div><b>Заявка в боте</b><span>Владелец указывает название, ссылку, назначение, страны и языки ресурса.</span></div></li>
-        <li><em>2</em><div><b>Проверка</b><span>Модераторы проверяют ресурс на соответствие требованиям и правилам.</span></div></li>
-        <li><em>3</em><div><b>Лицензия</b><span>Одобренный ресурс получает номер лицензии и ссылку подтверждения.</span></div></li>
-        <li><em>4</em><div><b>Контроль</b><span>Любой пользователь может подать жалобу. При нарушении лицензия отзывается.</span></div></li>
+        <li><em>1</em><div><b data-i18n="k45">Заявка в боте</b><span data-i18n="k46">Владелец указывает название, ссылку, назначение, страны и языки ресурса.</span></div></li>
+        <li><em>2</em><div><b data-i18n="k47">Проверка</b><span data-i18n="k48">Модераторы проверяют ресурс на соответствие требованиям и правилам.</span></div></li>
+        <li><em>3</em><div><b data-i18n="k49">Лицензия</b><span data-i18n="k50">Одобренный ресурс получает номер лицензии и ссылку подтверждения.</span></div></li>
+        <li><em>4</em><div><b data-i18n="k51">Контроль</b><span data-i18n="k52">Любой пользователь может подать жалобу. При нарушении лицензия отзывается.</span></div></li>
       </ol>
-      <div class="actions"><a class="btn btn-primary" id="bot-link" href="#">Открыть бота</a><a class="btn btn-line" href="#registry">Смотреть реестр</a></div>
+      <div class="actions"><a class="btn btn-primary" id="bot-link" href="#" data-i18n="k53">Открыть бота</a><a class="btn btn-line" href="#registry" data-i18n="k54">Смотреть реестр</a></div>
     </div>
     <div>
-      <h2>Что получает ресурс</h2>
-      <div class="cert" aria-label="Пример записи в реестре">
-        <small>Пример записи в реестре</small>
-        <div class="ct">Название ресурса</div>
-        <dl><dt>Лицензия</dt><dd>TL-00000</dd><dt>Тип</dt><dd>Публичный канал</dd><dt>Статус</dt><dd><span class="badge ok">Лицензия действительна</span></dd></dl>
+      <h2 data-i18n="k55">Что получает ресурс</h2>
+      <div class="cert">
+        <small data-i18n="k56">Пример записи в реестре</small>
+        <div class="ct"><span data-i18n="k57">Название ресурса</span></div>
+        <dl><dt data-i18n="k58">Лицензия</dt><dd>TL-00000</dd><dt data-i18n="k59">Тип</dt><dd data-i18n="k60">Публичный канал</dd><dt data-i18n="k61">Статус</dt><dd><span class="badge ok" data-i18n="k62">Лицензия действительна</span></dd></dl>
       </div>
       <ul class="list">
-        <li>Запись в открытом реестре на этом сайте.</li>
-        <li>Ссылку подтверждения: по ней бот показывает, что ресурс находится в реестре.</li>
-        <li>Отдельную страницу с названием, ссылкой и датой подтверждения.</li>
+        <li data-i18n="k63">Запись в открытом реестре на этом сайте.</li>
+        <li data-i18n="k64">Ссылку подтверждения: по ней бот показывает, что ресурс находится в реестре.</li>
+        <li data-i18n="k65">Отдельную страницу с названием, ссылкой и датой подтверждения.</li>
       </ul>
-      <p class="note">Приватные ресурсы не принимаются. Tele License — независимый проект: лицензия подтверждает, что ресурс прошёл проверку на момент выдачи, и может быть отозвана.</p>
+      <p class="note" data-i18n="k66">Приватные ресурсы не принимаются. Tele License — независимый проект: лицензия подтверждает, что ресурс прошёл проверку на момент выдачи, и может быть отозвана.</p>
     </div>
   </div>
 </section>
 
 <section class="tab-panel" id="tab-registry" hidden>
-  <h2>Реестр подтверждённых ресурсов</h2>
+  <h2 data-i18n="k67">Реестр подтверждённых ресурсов</h2>
   <div class="tools">
-    <input type="search" id="q" placeholder="Поиск по названию, ссылке или тематике" aria-label="Поиск по реестру">
-    <select id="kind" aria-label="Тип ресурса">
-      <option value="">Все типы</option>
-      <option value="channel">Каналы</option>
-      <option value="chat">Чаты</option>
-      <option value="bot">Боты</option>
+    <input type="search" id="q" placeholder="Поиск по названию, ссылке или тематике" data-i18n="k68" data-i18n-attr="placeholder">
+    <select id="kind" aria-label="Тип ресурса" data-i18n="k69" data-i18n-attr="aria-label">
+      <option value="" data-i18n="k70">Все типы</option>
+      <option value="channel" data-i18n="k71">Каналы</option>
+      <option value="chat" data-i18n="k72">Чаты</option>
+      <option value="bot" data-i18n="k73">Боты</option>
     </select>
   </div>
   <div class="reg" role="list">
-    <div class="reg-head"><span>Ресурс</span><span>Тип</span><span>Тематика</span><span>Подтверждён</span><span>Лицензия</span></div>
-    <div id="reg-body"><div class="empty">Загрузка реестра…</div></div>
+    <div class="reg-head"><span data-i18n="k74">Ресурс</span><span data-i18n="k75">Тип</span><span data-i18n="k76">Тематика</span><span data-i18n="k77">Подтверждён</span><span data-i18n="k78">Лицензия</span></div>
+    <div id="reg-body"><div class="empty">…</div></div>
   </div>
-  <div class="more"><button class="btn btn-line" id="more" hidden>Показать ещё</button></div>
+  <div class="more"><button class="btn btn-line" id="more" hidden data-i18n="k79">Показать ещё</button></div>
 </section>
 
 <section class="tab-panel" id="tab-rules" hidden>
   <div class="two">
     <div class="card">
-      <h2>Требования</h2>
-      <h3>Каналы и чаты</h3>
-      <ul class="list"><li>Публичные, со ссылкой t.me/username</li><li>Не менее 5 000 участников</li><li>Существуют более одного месяца</li><li>Не менее 20 сообщений</li></ul>
-      <h3>Боты</h3>
-      <ul class="list"><li>Не менее 10 000 пользователей</li><li>Бот работает и отвечает</li></ul>
-      <p class="note" style="margin:0">Приватные каналы и чаты не принимаются.</p>
+      <h2 data-i18n="k80">Требования</h2>
+      <h3 data-i18n="k81">Каналы и чаты</h3>
+      <ul class="list"><li data-i18n="k82">Публичные, со ссылкой t.me/username</li><li data-i18n="k83">Не менее 5 000 участников</li><li data-i18n="k84">Существуют более одного месяца</li><li data-i18n="k85">Не менее 20 сообщений</li></ul>
+      <h3 data-i18n="k86">Боты</h3>
+      <ul class="list"><li data-i18n="k87">Не менее 10 000 пользователей</li><li data-i18n="k88">Бот работает и отвечает</li></ul>
+      <p class="note" style="margin:0" data-i18n="k89">Приватные каналы и чаты не принимаются.</p>
     </div>
     <div class="card">
-      <h2>Что не допускается</h2>
+      <h2 data-i18n="k90">Что не допускается</h2>
       <ul class="list" style="margin:0">
-        <li>Контент 18+ (кроме новостного формата)</li>
-        <li>Вредоносное ПО, код и ссылки, включая фишинг</li>
-        <li>Обман людей, финансовые пирамиды, мошеннические схемы</li>
-        <li>Метки SCAM или FAKE</li>
-        <li>Насилие, ненависть, экстремизм</li>
-        <li>Запрещённые товары и услуги</li>
-        <li>Персональные данные без согласия, доксинг</li>
-        <li>Выдача себя за другой ресурс, бренд или человека</li>
-        <li>Накрутка и спам</li>
-        <li>Нарушение авторских прав и правил Telegram</li>
+        <li data-i18n="k91">Контент 18+ (кроме новостного формата)</li>
+        <li data-i18n="k92">Вредоносное ПО, код и ссылки, включая фишинг</li>
+        <li data-i18n="k93">Обман людей, финансовые пирамиды, мошеннические схемы</li>
+        <li data-i18n="k94">Метки SCAM или FAKE</li>
+        <li data-i18n="k95">Насилие, ненависть, экстремизм</li>
+        <li data-i18n="k96">Запрещённые товары и услуги</li>
+        <li data-i18n="k97">Персональные данные без согласия, доксинг</li>
+        <li data-i18n="k98">Выдача себя за другой ресурс, бренд или человека</li>
+        <li data-i18n="k99">Накрутка и спам</li>
+        <li data-i18n="k100">Нарушение авторских прав и правил Telegram</li>
       </ul>
     </div>
   </div>
@@ -116,12 +123,12 @@
 <footer class="site-footer"><div class="wrap">
   <div class="foot">
     <span>© 2026 TeleProjects</span>
-    <nav aria-label="Документы">
-      <a href="/terms">Условия использования</a>
-      <a href="/privacy">Политика конфиденциальности</a>
-      <a href="https://t.me/TeleProjects_tg">Новости в Telegram</a>
+    <nav aria-label="Документы" data-i18n="k101" data-i18n-attr="aria-label">
+      <a href="/terms" data-i18n="k102">Условия использования</a>
+      <a href="/privacy" data-i18n="k103">Политика конфиденциальности</a>
+      <a href="https://t.me/TeleProjects_tg" data-i18n="k104">Новости в Telegram</a>
     </nav>
   </div>
-  <p>TeleProjects — независимый проект и не связан с Telegram.</p>
+  <p data-i18n="k105">TeleProjects — независимый проект и не связан с Telegram.</p>
 </div></footer>
-<script src="/js/config.js"></script><script src="/js/app.js"></script></body></html>
+</body></html>

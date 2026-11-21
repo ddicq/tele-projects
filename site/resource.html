@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Проверка лицензии — Tele License</title>
-<meta name="description" content="Проверка лицензии ресурса в реестре Tele License.">
+<title data-i18n="k106">Проверка лицензии — Tele License</title>
+<meta name="description" content="Проверка лицензии ресурса в реестре Tele License." data-i18n="k107" data-i18n-attr="content">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -13,27 +13,34 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css">
+<script src="/js/config.js" defer></script>
+<script src="/js/en.js" defer></script>
+<script src="/js/i18n.js" defer></script>
+<script src="/js/app.js" defer></script>
 </head>
 <body>
 <header class="site-header"><div class="wrap bar">
-  <a class="brand" href="/"><span class="mark">TP</span>TeleProjects</a>
-  <nav aria-label="Основное меню">
-    <a href="/">Главная</a>
+  <a class="brand" href="/"><span class="mark">TP</span><span class="bn">TeleProjects</span></a>
+  <nav aria-label="Основное меню" data-i18n="k108" data-i18n-attr="aria-label">
+    <a href="/" data-i18n="k109">Главная</a>
     <a href="/tele-license" aria-current="page">Tele License</a>
   </nav>
+  <div class="lang" role="group" aria-label="Language">
+    <button type="button" data-lang="ru">RU</button><button type="button" data-lang="en">EN</button>
+  </div>
 </div></header>
 <main class="wrap">
-  <div class="detail" id="detail"><div class="card"><p class="empty">Загрузка…</p></div></div>
+  <div class="detail" id="detail"><div class="card"><p class="empty">…</p></div></div>
 </main>
 <footer class="site-footer"><div class="wrap">
   <div class="foot">
     <span>© 2026 TeleProjects</span>
-    <nav aria-label="Документы">
-      <a href="/terms">Условия использования</a>
-      <a href="/privacy">Политика конфиденциальности</a>
-      <a href="https://t.me/TeleProjects_tg">Новости в Telegram</a>
+    <nav aria-label="Документы" data-i18n="k110" data-i18n-attr="aria-label">
+      <a href="/terms" data-i18n="k111">Условия использования</a>
+      <a href="/privacy" data-i18n="k112">Политика конфиденциальности</a>
+      <a href="https://t.me/TeleProjects_tg" data-i18n="k113">Новости в Telegram</a>
     </nav>
   </div>
-  <p>TeleProjects — независимый проект и не связан с Telegram.</p>
+  <p data-i18n="k114">TeleProjects — независимый проект и не связан с Telegram.</p>
 </div></footer>
-<script src="/js/config.js"></script><script src="/js/app.js"></script></body></html>
+</body></html>

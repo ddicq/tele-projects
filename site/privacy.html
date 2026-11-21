@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Политика конфиденциальности — TeleProjects</title>
-<meta name="description" content="Какие данные собирает Tele License и как они используются.">
+<title data-i18n="k126">Политика конфиденциальности — TeleProjects</title>
+<meta name="description" content="Какие данные собирает Tele License и как они используются." data-i18n="k127" data-i18n-attr="content">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -13,22 +13,28 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css">
+<script src="/js/config.js" defer></script>
+<script src="/js/en.js" defer></script>
+<script src="/js/i18n.js" defer></script>
+<script src="/js/app.js" defer></script>
 </head>
 <body>
 <header class="site-header"><div class="wrap bar">
-  <a class="brand" href="/"><span class="mark">TP</span>TeleProjects</a>
-  <nav aria-label="Основное меню">
-    <a href="/">Главная</a>
+  <a class="brand" href="/"><span class="mark">TP</span><span class="bn">TeleProjects</span></a>
+  <nav aria-label="Основное меню" data-i18n="k128" data-i18n-attr="aria-label">
+    <a href="/" data-i18n="k129">Главная</a>
     <a href="/tele-license">Tele License</a>
   </nav>
+  <div class="lang" role="group" aria-label="Language">
+    <button type="button" data-lang="ru">RU</button><button type="button" data-lang="en">EN</button>
+  </div>
 </div></header>
-<main class="wrap doc">
-<h1>Политика конфиденциальности</h1>
+<main class="wrap doc"><div data-i18n="k125"><h1>Политика конфиденциальности</h1>
 <p class="meta">Редакция от 21 ноября 2026 г.</p>
 <p>Документ описывает, какие данные обрабатывает Telegram-бот Tele License и сайт TeleProjects, и для чего.</p>
 
 <h2>1. Какие данные мы обрабатываем</h2>
-<p>При обращении к боту: числовой идентификатор Telegram, имя и username (если указан), а также содержимое ваших сообщений в рамках заявки или жалобы.</p>
+<p>При обращении к боту: числовой идентификатор Telegram, имя и username (если указан), выбранный язык, а также содержимое ваших сообщений в рамках заявки или жалобы.</p>
 <p>В заявке: название, ссылка, тематика, страны и языки ресурса, число участников или пользователей.</p>
 <p>В жалобе: идентификатор автора, текст жалобы и дата.</p>
 
@@ -36,7 +42,7 @@
 <ul class="list">
   <li>рассмотрение заявок и выдача лицензий;</li>
   <li>рассмотрение жалоб и отзыв лицензий;</li>
-  <li>уведомление о решениях;</li>
+  <li>уведомление о решениях на выбранном вами языке;</li>
   <li>ведение открытого реестра и защита Сервиса от злоупотреблений.</li>
 </ul>
 
@@ -53,20 +59,19 @@
 <p>Вы можете запросить уточнение или удаление ваших данных, написав нам через канал <a href="https://t.me/TeleProjects_tg">TeleProjects</a>. Удаление данных действующей лицензии равносильно её отзыву.</p>
 
 <h2>7. Файлы cookie</h2>
-<p>Сайт не использует cookie для отслеживания. Шрифты загружаются с Google Fonts, поэтому ваш браузер обращается к серверам Google.</p>
+<p>Сайт не использует cookie для отслеживания, а выбранный язык хранит в локальной памяти браузера. Шрифты загружаются с Google Fonts, поэтому ваш браузер обращается к серверам Google.</p>
 
 <h2>8. Изменения</h2>
-<p>Актуальная редакция всегда доступна на этой странице.</p>
-</main>
+<p>Актуальная редакция всегда доступна на этой странице.</p></div></main>
 <footer class="site-footer"><div class="wrap">
   <div class="foot">
     <span>© 2026 TeleProjects</span>
-    <nav aria-label="Документы">
-      <a href="/terms">Условия использования</a>
-      <a href="/privacy">Политика конфиденциальности</a>
-      <a href="https://t.me/TeleProjects_tg">Новости в Telegram</a>
+    <nav aria-label="Документы" data-i18n="k130" data-i18n-attr="aria-label">
+      <a href="/terms" data-i18n="k131">Условия использования</a>
+      <a href="/privacy" data-i18n="k132">Политика конфиденциальности</a>
+      <a href="https://t.me/TeleProjects_tg" data-i18n="k133">Новости в Telegram</a>
     </nav>
   </div>
-  <p>TeleProjects — независимый проект и не связан с Telegram.</p>
+  <p data-i18n="k134">TeleProjects — независимый проект и не связан с Telegram.</p>
 </div></footer>
 </body></html>

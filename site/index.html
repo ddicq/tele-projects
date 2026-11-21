@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TeleProjects — независимые проекты для Telegram</title>
-<meta name="description" content="TeleProjects — независимая команда, которая создаёт открытые сервисы для пользователей и владельцев ресурсов Telegram.">
+<title data-i18n="k1">TeleProjects — независимые проекты для Telegram</title>
+<meta name="description" content="TeleProjects — независимая команда, которая создаёт открытые сервисы для пользователей и владельцев ресурсов Telegram." data-i18n="k2" data-i18n-attr="content">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -13,55 +13,50 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css">
+<script src="/js/config.js" defer></script>
+<script src="/js/en.js" defer></script>
+<script src="/js/i18n.js" defer></script>
+<script src="/js/app.js" defer></script>
 </head>
 <body>
 <header class="site-header"><div class="wrap bar">
-  <a class="brand" href="/"><span class="mark">TP</span>TeleProjects</a>
-  <nav aria-label="Основное меню">
-    <a href="/" aria-current="page">Главная</a>
+  <a class="brand" href="/"><span class="mark">TP</span><span class="bn">TeleProjects</span></a>
+  <nav aria-label="Основное меню" data-i18n="k3" data-i18n-attr="aria-label">
+    <a href="/" aria-current="page" data-i18n="k4">Главная</a>
     <a href="/tele-license">Tele License</a>
   </nav>
+  <div class="lang" role="group" aria-label="Language">
+    <button type="button" data-lang="ru">RU</button><button type="button" data-lang="en">EN</button>
+  </div>
 </div></header>
 <main>
 <section class="hero"><div class="wrap hero-grid">
   <div>
-    <span class="pill"><i></i>Независимая команда</span>
-    <h1>Проекты для экосистемы Telegram</h1>
-    <p class="lead">TeleProjects создаёт открытые и понятные сервисы для пользователей, авторов и владельцев ресурсов Telegram.</p>
+    <span class="pill"><i></i><span data-i18n="k5">Независимая команда</span></span>
+    <h1 data-i18n="k6">Проекты для экосистемы Telegram</h1>
+    <p class="lead" data-i18n="k7">TeleProjects создаёт открытые и понятные сервисы для пользователей, авторов и владельцев ресурсов Telegram.</p>
     <div class="actions">
-      <a class="btn btn-primary" href="https://t.me/TeleProjects_tg">Перейти в канал</a>
-      <a class="btn btn-line" href="#about">О проекте</a>
+      <a class="btn btn-primary" href="https://t.me/TeleProjects_tg" data-i18n="k8">Перейти в канал</a>
+      <a class="btn btn-line" href="#about" data-i18n="k9">О проекте</a>
     </div>
   </div>
   <div class="stack" aria-hidden="true">
-    <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span>Открытые правила<small>Понятные условия для всех</small></span></div>
-    <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg><span>Проверяемые результаты<small>Любой может убедиться сам</small></span></div>
-    <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg><span>Независимость<small>Решения принимает команда</small></span></div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span><b style="font-weight:600" data-i18n="k10">Открытые правила</b><small data-i18n="k11">Понятные условия для всех</small></span></div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg><span><b style="font-weight:600" data-i18n="k12">Проверяемые результаты</b><small data-i18n="k13">Любой может убедиться сам</small></span></div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg><span><b style="font-weight:600" data-i18n="k14">Независимость</b><small data-i18n="k15">Решения принимает команда</small></span></div>
   </div>
 </div></section>
 
 <section class="section" id="about">
   <div class="wrap">
     <div class="section-head">
-      <h2>О проекте</h2>
-      <p>TeleProjects — независимая команда. Мы запускаем отдельные сервисы вокруг Telegram и сопровождаем каждый из них: ведём правила, документы и поддержку. Проекты не связаны с Telegram и работают по собственным правилам.</p>
+      <h2 data-i18n="k16">О проекте</h2>
+      <p data-i18n="k17">TeleProjects — независимая команда. Мы запускаем отдельные сервисы вокруг Telegram и сопровождаем каждый из них: ведём правила, документы и поддержку. Проекты не связаны с Telegram и работают по собственным правилам.</p>
     </div>
     <div class="cards">
-      <article class="card">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></div>
-        <h3>Открытость</h3>
-        <p>Правила и документы каждого проекта опубликованы на сайте, а изменения мы объявляем заранее.</p>
-      </article>
-      <article class="card">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg></div>
-        <h3>Проверяемость</h3>
-        <p>Результаты работы наших сервисов можно проверить самостоятельно, не полагаясь на слова.</p>
-      </article>
-      <article class="card">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg></div>
-        <h3>Независимость</h3>
-        <p>Мы не аффилированы с Telegram. Решения в проектах принимает команда по опубликованным правилам.</p>
-      </article>
+      <article class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></div><h3 data-i18n="k18">Открытость</h3><p data-i18n="k19">Правила и документы каждого проекта опубликованы на сайте, а изменения мы объявляем заранее.</p></article>
+      <article class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg></div><h3 data-i18n="k20">Проверяемость</h3><p data-i18n="k21">Результаты работы наших сервисов можно проверить самостоятельно, не полагаясь на слова.</p></article>
+      <article class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg></div><h3 data-i18n="k22">Независимость</h3><p data-i18n="k23">Мы не аффилированы с Telegram. Решения в проектах принимает команда по опубликованным правилам.</p></article>
     </div>
   </div>
 </section>
@@ -69,8 +64,8 @@
 <section class="section alt" id="projects">
   <div class="wrap">
     <div class="section-head" style="margin-bottom:0">
-      <h2>Проекты</h2>
-      <p style="margin:0">Каждый проект работает как отдельный сервис и находится в своей вкладке в верхнем меню. Новые проекты появляются там по мере запуска, а анонсы мы публикуем в новостном канале.</p>
+      <h2 data-i18n="k24">Проекты</h2>
+      <p style="margin:0" data-i18n="k25">Каждый проект работает как отдельный сервис и находится в своей вкладке в верхнем меню. Новые проекты появляются там по мере запуска, а анонсы мы публикуем в новостном канале.</p>
     </div>
   </div>
 </section>
@@ -79,10 +74,10 @@
   <div class="wrap">
     <div class="cta">
       <div>
-        <h2>Новости TeleProjects</h2>
-        <p>Обновления проектов, изменения правил и анонсы мы публикуем в Telegram-канале. Там же можно задать вопрос команде.</p>
+        <h2 data-i18n="k26">Новости TeleProjects</h2>
+        <p data-i18n="k27">Обновления проектов, изменения правил и анонсы мы публикуем в Telegram-канале. Там же можно задать вопрос команде.</p>
       </div>
-      <a class="btn btn-primary" href="https://t.me/TeleProjects_tg">Открыть канал</a>
+      <a class="btn btn-primary" href="https://t.me/TeleProjects_tg" data-i18n="k28">Открыть канал</a>
     </div>
   </div>
 </section>
@@ -90,12 +85,12 @@
 <footer class="site-footer"><div class="wrap">
   <div class="foot">
     <span>© 2026 TeleProjects</span>
-    <nav aria-label="Документы">
-      <a href="/terms">Условия использования</a>
-      <a href="/privacy">Политика конфиденциальности</a>
-      <a href="https://t.me/TeleProjects_tg">Новости в Telegram</a>
+    <nav aria-label="Документы" data-i18n="k29" data-i18n-attr="aria-label">
+      <a href="/terms" data-i18n="k30">Условия использования</a>
+      <a href="/privacy" data-i18n="k31">Политика конфиденциальности</a>
+      <a href="https://t.me/TeleProjects_tg" data-i18n="k32">Новости в Telegram</a>
     </nav>
   </div>
-  <p>TeleProjects — независимый проект и не связан с Telegram.</p>
+  <p data-i18n="k33">TeleProjects — независимый проект и не связан с Telegram.</p>
 </div></footer>
 </body></html>

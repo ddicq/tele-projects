@@ -58,6 +58,11 @@ CREATE TABLE IF NOT EXISTS pending_actions (
     mod_id        BIGINT NOT NULL,
     PRIMARY KEY (chat_id, prompt_msg_id)
 );
+CREATE TABLE IF NOT EXISTS users (
+    user_id BIGINT PRIMARY KEY,
+    lang    TEXT NOT NULL DEFAULT 'ru'
+);
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 CREATE INDEX IF NOT EXISTS idx_registry_active ON registry (active, approved_at DESC);
 """
 
@@ -215,3 +220,16 @@ async def get_pending(chat_id: int, prompt_msg_id: int):
 
 async def del_pending(chat_id: int, prompt_msg_id: int) -> None:
     await pool.execute("DELETE FROM pending_actions WHERE chat_id=$1 AND prompt_msg_id=$2", chat_id, prompt_msg_id)
+
+
+# ---------- язык пользователей ----------
+async def get_lang(user_id: int):
+    return await pool.fetchval("SELECT lang FROM users WHERE user_id=$1", user_id)
+
+
+async def set_lang(user_id: int, lang: str) -> None:
+    await pool.execute(
+        """INSERT INTO users (user_id, lang) VALUES ($1,$2)
+           ON CONFLICT (user_id) DO UPDATE SET lang = EXCLUDED.lang""",
+        user_id, lang,
+    )

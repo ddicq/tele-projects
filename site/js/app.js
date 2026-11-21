@@ -1,9 +1,13 @@
 (() => {
   const C = window.TL_CONFIG;
+  const { t, fmt } = window.TL_I18N;
   const $ = (s, r = document) => r.querySelector(s);
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const KIND = { channel: "Канал", chat: "Чат", bot: "Бот" };
-  const fmt = iso => new Date(iso).toLocaleDateString("ru-RU");
+  const PURPOSES = ["news", "sports", "tech", "finance", "education", "entertainment", "games", "services", "community"];
+  const kind = k => ["channel", "chat", "bot"].includes(k) ? t("kind_" + k) : k;
+  const purpose = v => PURPOSES.includes(v) ? t("p_" + v) : v;
+  const countries = v => v === "all" ? t("all_countries") : v;
+  const languages = v => v === "all" ? t("all_languages") : v;
   const safe = u => (/^https:\/\/t\.me\/[A-Za-z0-9_]+$/.test(u) ? u : "#");
 
   async function api(path) {
@@ -19,6 +23,9 @@
     const names = ["about", "registry", "rules"];
     const botLink = $("#bot-link");
     if (botLink) botLink.href = C.BOT;
+    const state = { loaded: false, offset: 0, limit: 20, total: 0 };
+    const body = $("#reg-body"), more = $("#more"), q = $("#q"), kindSel = $("#kind");
+
     const apply = () => {
       const name = names.includes(location.hash.slice(1)) ? location.hash.slice(1) : "about";
       names.forEach(n => { $("#tab-" + n).hidden = n !== name; });
@@ -26,42 +33,38 @@
       if (name === "registry" && !state.loaded) load(true);
     };
 
-    // ----- реестр -----
-    const state = { loaded: false, offset: 0, limit: 20, total: 0 };
-    const body = $("#reg-body"), more = $("#more"), q = $("#q"), kind = $("#kind");
-
     const row = r => `
       <a class="reg-row" role="listitem" href="/registry/${esc(r.id)}">
         <span class="t">${esc(r.title)}<small>${esc(r.link.replace("https://", ""))}</small></span>
-        <span>${esc(KIND[r.kind] || r.kind)}</span>
-        <span>${esc(r.purpose)}</span>
+        <span>${esc(kind(r.kind))}</span>
+        <span>${esc(purpose(r.purpose))}</span>
         <span>${fmt(r.approved_at)}</span>
         <span class="lic">${esc(r.id)}</span>
       </a>`;
 
     async function load(reset) {
-      if (reset) { state.offset = 0; body.innerHTML = '<div class="empty">Загрузка реестра…</div>'; }
+      if (reset) { state.offset = 0; body.innerHTML = `<div class="empty">${esc(t("reg_loading"))}</div>`; }
       const p = new URLSearchParams({ limit: state.limit, offset: state.offset });
       if (q.value.trim()) p.set("q", q.value.trim());
-      if (kind.value) p.set("kind", kind.value);
+      if (kindSel.value) p.set("kind", kindSel.value);
       try {
         const data = await api("/api/registry?" + p);
         state.loaded = true;
         state.total = data.total;
         const html = data.items.map(row).join("");
-        if (reset) body.innerHTML = html || '<div class="empty">Ресурсы не найдены. Измените запрос или фильтр.</div>';
+        if (reset) body.innerHTML = html || `<div class="empty">${esc(t("reg_empty"))}</div>`;
         else body.insertAdjacentHTML("beforeend", html);
         state.offset += data.items.length;
         more.hidden = state.offset >= state.total;
       } catch (e) {
         more.hidden = true;
-        body.innerHTML = '<div class="empty">Реестр временно недоступен. Повторите попытку через минуту.</div>';
+        body.innerHTML = `<div class="empty">${esc(t("reg_error"))}</div>`;
       }
     }
 
     let timer;
     q.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(() => load(true), 300); });
-    kind.addEventListener("change", () => load(true));
+    kindSel.addEventListener("change", () => load(true));
     more.addEventListener("click", () => load(false));
     window.addEventListener("hashchange", apply);
     apply();
@@ -73,37 +76,35 @@
     const id = decodeURIComponent(location.pathname.split("/").pop() || "");
     const num = id.replace(/^TL-/i, "");
     const card = inner => (detail.innerHTML = `<div class="card">${inner}</div>`);
-    const back = '<p><a href="/tele-license#registry">Вернуться к реестру</a></p>';
+    const back = `<p><a href="/tele-license#registry">${esc(t("res_back"))}</a></p>`;
 
     (async () => {
-      if (!/^\d+$/.test(num)) return card("<h2>Лицензия не найдена</h2><p>Проверьте номер лицензии.</p>" + back);
+      if (!/^\d+$/.test(num)) return card(`<h2>${esc(t("res_nf_title"))}</h2><p>${esc(t("res_nf_bad"))}</p>` + back);
       try {
         const r = await api("/api/registry/" + num);
-        if (r.notFound) return card("<h2>Лицензия не найдена</h2><p>Ресурса с таким номером нет в реестре.</p>" + back);
-        document.title = `${r.title} — лицензия ${r.id}`;
+        if (r.notFound) return card(`<h2>${esc(t("res_nf_title"))}</h2><p>${esc(t("res_nf_text"))}</p>` + back);
+        document.title = t("doc_title", { title: r.title, id: r.id });
         const ok = r.active;
         card(`
-          <span class="badge ${ok ? "ok" : "bad"}">${ok ? "Лицензия действительна" : "Лицензия недействительна"}</span>
-          <h1 style="margin-top:14px">${esc(r.title)}</h1>
-          <p style="color:var(--muted)">${ok
-            ? "Ресурс находится в реестре безопасных ресурсов Tele License."
-            : "Ресурс исключён из реестра " + fmt(r.revoked_at) + ". Подтверждение не действует."}</p>
+          <span class="badge ${ok ? "ok" : "bad"}">${esc(t(ok ? "res_ok" : "res_bad"))}</span>
+          <h1>${esc(r.title)}</h1>
+          <p style="color:var(--muted)">${esc(ok ? t("res_ok_text") : t("res_bad_text", { date: fmt(r.revoked_at) }))}</p>
           <dl>
-            <dt>Номер лицензии</dt><dd class="lic">${esc(r.id)}</dd>
-            <dt>Тип</dt><dd>${esc(KIND[r.kind] || r.kind)}</dd>
-            <dt>Адрес</dt><dd>${esc(r.link.replace("https://", ""))}</dd>
-            <dt>Тематика</dt><dd>${esc(r.purpose)}</dd>
-            <dt>Страны</dt><dd>${esc(r.countries)}</dd>
-            <dt>Языки</dt><dd>${esc(r.languages)}</dd>
-            <dt>Дата подтверждения</dt><dd>${fmt(r.approved_at)}</dd>
+            <dt>${esc(t("dt_lic"))}</dt><dd class="lic">${esc(r.id)}</dd>
+            <dt>${esc(t("dt_type"))}</dt><dd>${esc(kind(r.kind))}</dd>
+            <dt>${esc(t("dt_addr"))}</dt><dd>${esc(r.link.replace("https://", ""))}</dd>
+            <dt>${esc(t("dt_topic"))}</dt><dd>${esc(purpose(r.purpose))}</dd>
+            <dt>${esc(t("dt_countries"))}</dt><dd>${esc(countries(r.countries))}</dd>
+            <dt>${esc(t("dt_langs"))}</dt><dd>${esc(languages(r.languages))}</dd>
+            <dt>${esc(t("dt_date"))}</dt><dd>${fmt(r.approved_at)}</dd>
           </dl>
           <div class="actions" style="margin-top:8px">
-            ${ok ? `<a class="btn btn-dark" href="${esc(safe(r.link))}" rel="noopener noreferrer">Перейти к ресурсу</a>
-            <a class="btn btn-line" href="${esc(C.BOT)}?start=v_${r.num}" rel="noopener noreferrer">Подать жалобу в боте</a>` : ""}
-            <a class="btn btn-line" href="/tele-license#registry">Весь реестр</a>
+            ${ok ? `<a class="btn btn-dark" href="${esc(safe(r.link))}" rel="noopener noreferrer">${esc(t("btn_go"))}</a>
+            <a class="btn btn-line" href="${esc(C.BOT)}?start=v_${r.num}" rel="noopener noreferrer">${esc(t("btn_report"))}</a>` : ""}
+            <a class="btn btn-line" href="/tele-license#registry">${esc(t("btn_all"))}</a>
           </div>`);
       } catch (e) {
-        card("<h2>Не удалось загрузить данные</h2><p>Сервис проверки временно недоступен. Повторите попытку через минуту.</p>" + back);
+        card(`<h2>${esc(t("res_err_title"))}</h2><p>${esc(t("res_err_text"))}</p>` + back);
       }
     })();
   }

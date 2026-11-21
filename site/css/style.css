@@ -148,3 +148,15 @@ p{margin:0 0 1em}
   .site-header nav a{padding:8px 12px}
 }
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
+
+/* переключатель языка */
+.lang{display:inline-flex;padding:3px;background:#EEF2F8;border:1px solid var(--line);border-radius:99px;flex:none}
+.lang button{font:600 .78rem var(--sans);letter-spacing:.02em;padding:6px 11px;border:0;border-radius:99px;background:transparent;color:var(--muted);cursor:pointer}
+.lang button:hover{color:var(--ink)}
+.lang button.on{background:var(--surface);color:var(--accent-d);box-shadow:0 1px 3px rgba(15,23,42,.12)}
+.bar nav{margin-left:auto}
+@media (max-width:560px){
+  .bar{gap:8px}
+  .brand .bn{display:none}
+  .site-header nav a{padding:8px 10px;font-size:.9rem}
+}
