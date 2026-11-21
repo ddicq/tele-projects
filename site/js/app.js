@@ -91,7 +91,7 @@
           <dl>
             <dt>Номер лицензии</dt><dd class="lic">${esc(r.id)}</dd>
             <dt>Тип</dt><dd>${esc(KIND[r.kind] || r.kind)}</dd>
-            <dt>Ссылка</dt><dd>${ok ? `<a href="${esc(safe(r.link))}" rel="noopener noreferrer">${esc(r.link.replace("https://", ""))}</a>` : esc(r.link.replace("https://", ""))}</dd>
+            <dt>Адрес</dt><dd>${esc(r.link.replace("https://", ""))}</dd>
             <dt>Тематика</dt><dd>${esc(r.purpose)}</dd>
             <dt>Страны</dt><dd>${esc(r.countries)}</dd>
             <dt>Языки</dt><dd>${esc(r.languages)}</dd>
