@@ -1,1 +1,31 @@
-# tele-projects
+# Tele License + TeleProjects
+
+- `bot/` — Telegram-бот (aiogram 3) + HTTP API реестра → деплой на Render
+- `site/` — статический сайт → деплой на Vercel
+
+## 1. База данных
+Нужен Postgres. Проще всего Supabase (бесплатно, не удаляется): Project Settings → Database → Connection string (Session pooler)
+→ это `DATABASE_URL`. Таблицы бот создаёт сам при запуске.
+
+## 2. Чат модераторов
+1. Создайте супергруппу, включите «Темы» (Topics).
+2. Создайте две темы: «Заявки» и «Жалобы». Добавьте бота админом (права: отправка и удаление сообщений).
+3. ID чата (-100…) и ID тем: перешлите сообщение боту @getidsbot или откройте тему в web.telegram.org —
+   в ссылке `.../c/<chat>/<topic>`: chat → `-100<chat>`, topic → ID темы. Тема General = `1`.
+4. Модераторами считаются администраторы этого чата (+ ID из `ADMIN_IDS`).
+
+## 3. Render (бот)
+New → Blueprint → репозиторий с этим проектом (`render.yaml`), либо Web Service вручную:
+Root Directory пустой, Build `pip install -r bot/requirements.txt`, Start `python bot/main.py`. Папка `site/` Render не использует.
+Переменные — из `bot/.env.example`. Health check: `/health`.
+На бесплатном тарифе сервис засыпает, а бот работает через polling — используйте тариф Starter
+или пингуйте `/health` каждые 5 минут (UptimeRobot).
+
+## 4. Vercel (сайт)
+Root Directory `site`, Framework Preset «Other» (папка `bot/` Vercel не использует). Перед деплоем в `site/js/config.js` укажите
+`API` (URL сервиса на Render) и `BOT` (ссылка на бота). Затем в Render в `SITE_URL` — адрес сайта.
+
+## Как работают проверки
+Бот автоматически проверяет: ресурс публичный и существует, тип совпадает, число участников (≥ 5 000),
+заявитель — администратор (если Telegram позволяет это узнать). Возраст ресурса, число сообщений и контент
+Bot API получить не позволяет — их проверяет модератор по чек-листу в карточке заявки.

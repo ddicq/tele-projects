@@ -1,0 +1,4 @@
+{
+  "cleanUrls": true,
+  "rewrites": [{ "source": "/registry/:id", "destination": "/resource.html" }]
+}

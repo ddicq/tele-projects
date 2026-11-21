@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: tele-license-bot
+    runtime: python
+    rootDir: bot
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: BOT_TOKEN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: MOD_CHAT_ID
+        value: "-1004458177876"
+      - key: TOPIC_APPLICATIONS
+        value: "2"
+      - key: TOPIC_COMPLAINTS
+        value: "3"
+      - key: ADMIN_IDS
+        sync: false
+      - key: SITE_URL
+        sync: false

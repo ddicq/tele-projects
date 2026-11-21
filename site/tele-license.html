@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tele License — реестр безопасных ресурсов Telegram</title>
+<meta name="description" content="Tele License: реестр публичных каналов, чатов и ботов Telegram, прошедших проверку. Подача заявки, проверка лицензии, жалобы.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%2312304F'/%3E%3Ctext x='16' y='21' font-family='Georgia' font-size='13' font-weight='700' fill='%23C9A94E' text-anchor='middle'%3ETP%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="site-header"><div class="wrap bar">
+  <a class="brand" href="/"><span class="mark">TP</span>TeleProjects</a>
+  <nav aria-label="Основное меню">
+    <a href="/">Главная</a>
+    <a href="/tele-license" aria-current="page">Tele License</a>
+  </nav>
+</div></header>
+<main>
+<section class="page-head"><div class="wrap">
+  <h1>Tele License</h1>
+  <p>Реестр публичных каналов, чатов и ботов Telegram, которые прошли проверку модераторами и соответствуют правилам проекта.</p>
+  <nav class="tabs" id="tabs" aria-label="Разделы проекта">
+    <a href="#about" data-tab="about">О проекте</a>
+    <a href="#registry" data-tab="registry">Реестр</a>
+    <a href="#rules" data-tab="rules">Правила</a>
+  </nav>
+</div></section>
+
+<div class="wrap" style="padding-top:40px;padding-bottom:64px">
+
+<section class="tab-panel" id="tab-about">
+  <div class="two">
+    <div>
+      <h2>Как это работает</h2>
+      <ol class="steps">
+        <li><b>Заявка в боте</b><span>Владелец указывает название, ссылку, назначение, страны и языки ресурса.</span></li>
+        <li><b>Проверка</b><span>Модераторы проверяют ресурс на соответствие требованиям и правилам.</span></li>
+        <li><b>Лицензия</b><span>Одобренный ресурс получает номер лицензии и ссылку подтверждения.</span></li>
+        <li><b>Контроль</b><span>Любой пользователь может подать жалобу. При нарушении лицензия отзывается.</span></li>
+      </ol>
+      <div class="actions"><a class="btn btn-dark" id="bot-link" href="#">Открыть бота</a><a class="btn btn-line" href="#registry">Смотреть реестр</a></div>
+    </div>
+    <div>
+      <h2>Что получает ресурс</h2>
+      <ul class="list">
+        <li>Запись в открытом реестре на этом сайте.</li>
+        <li>Ссылку подтверждения, по которой бот показывает, что ресурс находится в реестре.</li>
+        <li>Страницу с названием, ссылкой и датой подтверждения.</li>
+      </ul>
+      <h2 style="margin-top:1.4em">Кто может подать заявку</h2>
+      <p>Владельцы и администраторы публичных каналов, чатов и ботов. Приватные ресурсы не принимаются.</p>
+      <p class="note">Tele License — независимый проект. Лицензия подтверждает, что ресурс прошёл проверку на момент выдачи, и может быть отозвана.</p>
+    </div>
+  </div>
+</section>
+
+<section class="tab-panel" id="tab-registry" hidden>
+  <h2>Реестр подтверждённых ресурсов</h2>
+  <div class="tools">
+    <input type="search" id="q" placeholder="Поиск по названию, ссылке или тематике" aria-label="Поиск по реестру">
+    <select id="kind" aria-label="Тип ресурса">
+      <option value="">Все типы</option>
+      <option value="channel">Каналы</option>
+      <option value="chat">Чаты</option>
+      <option value="bot">Боты</option>
+    </select>
+  </div>
+  <div class="reg" role="list">
+    <div class="reg-head"><span>Ресурс</span><span>Тип</span><span>Тематика</span><span>Подтверждён</span><span>Лицензия</span></div>
+    <div id="reg-body"><div class="empty">Загрузка реестра…</div></div>
+  </div>
+  <div class="more"><button class="btn btn-line" id="more" hidden>Показать ещё</button></div>
+</section>
+
+<section class="tab-panel" id="tab-rules" hidden>
+  <div class="two">
+    <div>
+      <h2>Требования</h2>
+      <h3>Каналы и чаты</h3>
+      <ul class="list"><li>Публичные, со ссылкой t.me/username</li><li>Не менее 5 000 участников</li><li>Существуют более одного месяца</li><li>Не менее 20 сообщений</li></ul>
+      <h3>Боты</h3>
+      <ul class="list"><li>Не менее 10 000 пользователей</li><li>Бот работает и отвечает</li></ul>
+      <p class="note">Приватные каналы и чаты не принимаются.</p>
+    </div>
+    <div>
+      <h2>Что не допускается</h2>
+      <ul class="list">
+        <li>Контент 18+ (кроме новостного формата)</li>
+        <li>Вредоносное ПО, код и ссылки, включая фишинг</li>
+        <li>Обман людей, финансовые пирамиды, мошеннические схемы</li>
+        <li>Метки SCAM или FAKE</li>
+        <li>Насилие, ненависть, экстремизм</li>
+        <li>Запрещённые товары и услуги</li>
+        <li>Персональные данные без согласия, доксинг</li>
+        <li>Выдача себя за другой ресурс, бренд или человека</li>
+        <li>Накрутка и спам</li>
+        <li>Нарушение авторских прав и правил Telegram</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</div>
+</main>
+<footer class="site-footer"><div class="wrap">
+  <div class="foot">
+    <span>© 2026 TeleProjects</span>
+    <nav aria-label="Документы">
+      <a href="/terms">Условия использования</a>
+      <a href="/privacy">Политика конфиденциальности</a>
+      <a href="https://t.me/TeleProjects_tg">Новости в Telegram</a>
+    </nav>
+  </div>
+  <p>TeleProjects — независимый проект и не связан с Telegram. Наличие лицензии не является гарантией безопасности ресурса.</p>
+</div></footer>
+<script src="/js/config.js"></script><script src="/js/app.js"></script></body></html>
