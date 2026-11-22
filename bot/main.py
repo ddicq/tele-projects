@@ -196,7 +196,8 @@ def app_card(a) -> str:
              else "⚠️ не подтверждено автоматически — уточните у заявителя")
     if a["kind"] == "bot":
         count_label = "Пользователей (со слов заявителя)"
-        checks = "• бот работает и отвечает\n• в профиле указано соответствующее число пользователей"
+        checks = ("• это именно бот, а не личный аккаунт (у ботов юзернейм не обязан оканчиваться на bot)\n"
+                  "• бот работает и отвечает\n• в профиле указано соответствующее число пользователей")
     else:
         count_label = "Участников (по данным Telegram)"
         checks = "• ресурс существует более 1 месяца\n• опубликовано не менее 20 сообщений"
@@ -398,8 +399,6 @@ async def f_link(m: Message, state: FSMContext, bot: Bot, lang: str):
     username, err = parse_username(m.text)
     if err:
         return await m.answer(tr(lang, err))
-    if kind == "bot" and not username.lower().endswith("bot"):
-        return await m.answer(tr(lang, "bot_suffix"))
     if await db.username_taken(username):
         await state.clear()
         return await m.answer(tr(lang, "taken"), reply_markup=main_menu(lang))
