@@ -261,6 +261,108 @@ STR["en"].update({
  "p_education": "Education", "p_entertainment": "Entertainment", "p_games": "Games",
  "p_services": "Services & VPN", "p_community": "Community"})
 
+# ---------- аукцион номеров ----------
+STR["ru"].update({
+ "b_auction": "Аукцион номеров", "b_mynums": "Мои номера", "b_back_auction": "К списку лотов",
+ "b_custom": "Своя сумма", "b_assign": "Присвоить своему ресурсу", "b_confirm": "Подтвердить",
+ "b_site_auction": "Аукцион на сайте", "b_back_nums": "К моим номерам",
+ "au_intro": (
+    "<b>Аукцион номеров лицензий</b>\n\n"
+    "Купите особенный номер за звёзды Telegram и присвойте его своему подтверждённому ресурсу.\n\n"
+    "• Аукцион по лоту начинается с первой ставки и длится {days} дней.\n"
+    "• Ставку можно перебить: минимальный шаг — {step} ⭐, можно предложить любую большую сумму.\n"
+    "• Сумма ставки списывается сразу. Если вашу ставку перебили, звёзды автоматически возвращаются.\n"
+    "• Побеждает последняя ставка. Номер появится в разделе «Мои номера».\n"
+    "• Номер закрепляется за ресурсом навсегда. Если лицензия ресурса будет отозвана, номер не возвращается.\n\n"
+    "Выберите лот. Отметка ✓ означает, что ваша ставка лидирует."),
+ "lot_idle": ("<b>Лот {lic}</b>\n\nСтатус: ожидает первой ставки\nСтартовая цена: {price} ⭐\n\n"
+              "Первая ставка запускает аукцион на {days} дней. Её сумма оплачивается сразу, стартовая цена входит в ставку."),
+ "lot_active": ("<b>Лот {lic}</b>\n\nСтатус: идёт аукцион\nТекущая ставка: {price} ⭐\n"
+                "До конца: {left} (до {ends})\nМинимальная следующая ставка: {min} ⭐"),
+ "lot_closing": "<b>Лот {lic}</b>\n\nСтатус: аукцион завершается\nФинальная ставка: {price} ⭐\nИтоги будут подведены в течение минуты.",
+ "lot_sold": "<b>Лот {lic}</b>\n\nСтатус: продан\nИтоговая цена: {price} ⭐",
+ "lot_yours": "Этот номер принадлежит вам. Его можно присвоить ресурсу в разделе «Мои номера».",
+ "lot_leading": "Ваша ставка лидирует.",
+ "lot_missing": "Лот не найден.", "sold_short": "продан",
+ "left_dh": "{d} д {h} ч", "left_hm": "{h} ч {m} мин",
+ "bid_custom_prompt": "Введите сумму ставки в звёздах: целое число от {min} до {max}.",
+ "bid_custom_nan": "Введите целое число, например {min}.",
+ "bid_err_bad": "Ставка недействительна.", "bid_err_ended": "Аукцион по этому лоту завершён.",
+ "bid_err_self": "Ваша ставка уже лидирует.", "bid_err_low": "Ставку уже перебили. Минимальная ставка сейчас — {min} ⭐.",
+ "bid_err_max": "Максимальная ставка — {max} ⭐.",
+ "inv_title": "Ставка на номер {lic}",
+ "inv_desc": "Аукцион номеров лицензий Tele License. Ставка: {amount} ⭐. Если вашу ставку перебьют, звёзды вернутся автоматически.",
+ "inv_label": "Ставка {lic}", "inv_fail": "Не удалось создать счёт. Попробуйте позже.",
+ "inv_sent": "Счёт на {amount} ⭐ отправлен. Оплатите его, чтобы ставка была принята.",
+ "bid_ok": "<b>Ставка принята</b>\n\nЛот {lic}: ваша ставка {amount} ⭐ лидирует.\nАукцион завершится {ends} (осталось {left}).",
+ "bid_refunded": "<b>Ставка не принята</b>\n\n{reason}\nЗвёзды ({amount} ⭐) возвращены.",
+ "bid_refund_fail": "<b>Ставка не принята</b>\n\n{reason}\nНе удалось вернуть {amount} ⭐ автоматически. Мы вернём их вручную.",
+ "outbid": "<b>Вашу ставку перебили</b>\n\nЛот {lic}: новая ставка — {amount} ⭐.\nВаши {refund} ⭐ возвращены. Вы можете сделать новую ставку.",
+ "outbid_fail": "<b>Вашу ставку перебили</b>\n\nЛот {lic}: новая ставка — {amount} ⭐.\nНе удалось вернуть {refund} ⭐ автоматически. Мы вернём их вручную.",
+ "won": "<b>Вы выиграли аукцион</b>\n\nНомер {lic} теперь ваш за {price} ⭐. Откройте «Мои номера», чтобы присвоить его своему ресурсу.",
+ "nums_none": "У вас пока нет номеров. Их можно купить на аукционе.",
+ "nums_header": "<b>Мои номера</b>\n\nНомера, купленные на аукционе. Нажмите на номер, чтобы присвоить его ресурсу.",
+ "num_free": "свободен", "num_used": "присвоен",
+ "num_detail_free": "<b>Номер {lic}</b>\n\nКуплен за {price} ⭐.\nСтатус: свободен. Его можно присвоить подтверждённому ресурсу.",
+ "num_detail_used": "<b>Номер {lic}</b>\n\nКуплен за {price} ⭐.\nСтатус: присвоен ресурсу «{title}».",
+ "assign_pick": "<b>Присвоить номер {lic}</b>\n\nВыберите ресурс. Его текущий номер будет заменён.",
+ "assign_none": "У вас нет действующих ресурсов с обычным номером. Номер можно присвоить только подтверждённому ресурсу, у которого ещё нет особенного номера.",
+ "assign_confirm": ("<b>Подтвердите замену номера</b>\n\nРесурс: «{title}»\nСейчас: {old}\nСтанет: {new}\n\n"
+                    "Ссылка подтверждения изменится. Старая ссылка продолжит работать и приведёт к новому номеру. Действие необратимо."),
+ "assign_done": "<b>Номер присвоен</b>\n\nРесурс «{title}» теперь имеет лицензию {new}.\n<b>Новая ссылка подтверждения:</b> {link}",
+ "assign_fail": "Не удалось присвоить номер: данные изменились. Откройте «Мои номера» и попробуйте снова.",
+})
+STR["en"].update({
+ "b_auction": "Number auction", "b_mynums": "My numbers", "b_back_auction": "Back to lots",
+ "b_custom": "Custom amount", "b_assign": "Assign to my resource", "b_confirm": "Confirm",
+ "b_site_auction": "Auction on the website", "b_back_nums": "Back to my numbers",
+ "au_intro": (
+    "<b>License number auction</b>\n\n"
+    "Buy a special number with Telegram Stars and assign it to your verified resource.\n\n"
+    "• The auction for a lot starts with the first bid and lasts {days} days.\n"
+    "• A bid can be outbid: the minimum step is {step} ⭐, and you can offer any larger amount.\n"
+    "• The bid amount is charged immediately. If you are outbid, your stars are returned automatically.\n"
+    "• The last bid wins. The number will appear under “My numbers”.\n"
+    "• A number is bound to the resource permanently. If the resource’s license is revoked, the number is not returned.\n\n"
+    "Choose a lot. A ✓ means your bid is leading."),
+ "lot_idle": ("<b>Lot {lic}</b>\n\nStatus: waiting for the first bid\nStarting price: {price} ⭐\n\n"
+              "The first bid starts a {days}-day auction. It is paid immediately, and the starting price is part of the bid."),
+ "lot_active": ("<b>Lot {lic}</b>\n\nStatus: auction in progress\nCurrent bid: {price} ⭐\n"
+                "Time left: {left} (until {ends})\nMinimum next bid: {min} ⭐"),
+ "lot_closing": "<b>Lot {lic}</b>\n\nStatus: auction is ending\nFinal bid: {price} ⭐\nResults will be announced within a minute.",
+ "lot_sold": "<b>Lot {lic}</b>\n\nStatus: sold\nFinal price: {price} ⭐",
+ "lot_yours": "This number belongs to you. You can assign it to a resource under “My numbers”.",
+ "lot_leading": "Your bid is leading.",
+ "lot_missing": "Lot not found.", "sold_short": "sold",
+ "left_dh": "{d}d {h}h", "left_hm": "{h}h {m}m",
+ "bid_custom_prompt": "Enter your bid in stars: a whole number from {min} to {max}.",
+ "bid_custom_nan": "Enter a whole number, for example {min}.",
+ "bid_err_bad": "The bid is invalid.", "bid_err_ended": "The auction for this lot has ended.",
+ "bid_err_self": "Your bid is already leading.", "bid_err_low": "You have been outbid. The minimum bid is now {min} ⭐.",
+ "bid_err_max": "The maximum bid is {max} ⭐.",
+ "inv_title": "Bid on number {lic}",
+ "inv_desc": "Tele License number auction. Bid: {amount} ⭐. If you are outbid, your stars are returned automatically.",
+ "inv_label": "Bid {lic}", "inv_fail": "Could not create the invoice. Please try again later.",
+ "inv_sent": "An invoice for {amount} ⭐ has been sent. Pay it to place your bid.",
+ "bid_ok": "<b>Bid accepted</b>\n\nLot {lic}: your bid of {amount} ⭐ is leading.\nThe auction ends {ends} ({left} left).",
+ "bid_refunded": "<b>Bid not accepted</b>\n\n{reason}\nYour stars ({amount} ⭐) have been refunded.",
+ "bid_refund_fail": "<b>Bid not accepted</b>\n\n{reason}\nWe could not refund {amount} ⭐ automatically. We will refund them manually.",
+ "outbid": "<b>You have been outbid</b>\n\nLot {lic}: the new bid is {amount} ⭐.\nYour {refund} ⭐ have been refunded. You can place a new bid.",
+ "outbid_fail": "<b>You have been outbid</b>\n\nLot {lic}: the new bid is {amount} ⭐.\nWe could not refund {refund} ⭐ automatically. We will refund them manually.",
+ "won": "<b>You won the auction</b>\n\nNumber {lic} is now yours for {price} ⭐. Open “My numbers” to assign it to your resource.",
+ "nums_none": "You don’t have any numbers yet. You can buy them at the auction.",
+ "nums_header": "<b>My numbers</b>\n\nNumbers you bought at the auction. Tap a number to assign it to a resource.",
+ "num_free": "available", "num_used": "assigned",
+ "num_detail_free": "<b>Number {lic}</b>\n\nBought for {price} ⭐.\nStatus: available. You can assign it to a verified resource.",
+ "num_detail_used": "<b>Number {lic}</b>\n\nBought for {price} ⭐.\nStatus: assigned to “{title}”.",
+ "assign_pick": "<b>Assign number {lic}</b>\n\nChoose a resource. Its current number will be replaced.",
+ "assign_none": "You have no active resources with a regular number. A number can only be assigned to a verified resource that doesn’t have a special number yet.",
+ "assign_confirm": ("<b>Confirm the number change</b>\n\nResource: “{title}”\nNow: {old}\nWill become: {new}\n\n"
+                    "The verification link will change. The old link will keep working and lead to the new number. This cannot be undone."),
+ "assign_done": "<b>Number assigned</b>\n\nThe resource “{title}” now has license {new}.\n<b>New verification link:</b> {link}",
+ "assign_fail": "Could not assign the number: the data has changed. Open “My numbers” and try again.",
+})
+
 LANG_NAMES = ["Русский", "English", "Українська", "Қазақша", "Oʻzbekcha", "Español",
               "Deutsch", "Français", "Türkçe", "العربية"]
 
@@ -270,6 +372,8 @@ def tr(lang: str, key: str, **kw) -> str:
     text = table.get(key) or STR[DEFAULT_LANG][key]
     kw.setdefault("members", _num(config.MIN_MEMBERS))
     kw.setdefault("bots", _num(config.MIN_BOT_USERS))
+    kw.setdefault("days", config.AUCTION_DAYS)
+    kw.setdefault("step", config.BID_STEP)
     return text.format(**kw) if kw else text
 
 

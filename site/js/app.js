@@ -20,9 +20,8 @@
   // ----- вкладки проекта -----
   const tabs = $("#tabs");
   if (tabs) {
-    const names = ["about", "registry", "rules"];
-    const botLink = $("#bot-link");
-    if (botLink) botLink.href = C.BOT;
+    const names = ["about", "registry", "auction", "rules"];
+    for (const id of ["#bot-link", "#bot-link-au"]) { const el = $(id); if (el) el.href = C.BOT; }
     const state = { loaded: false, offset: 0, limit: 20, total: 0 };
     const body = $("#reg-body"), more = $("#more"), q = $("#q"), kindSel = $("#kind");
 
@@ -31,7 +30,44 @@
       names.forEach(n => { $("#tab-" + n).hidden = n !== name; });
       tabs.querySelectorAll("a").forEach(a => a.classList.toggle("on", a.dataset.tab === name));
       if (name === "registry" && !state.loaded) load(true);
+      if (name === "auction") startAuction(); else stopAuction();
     };
+
+    // ----- аукцион номеров -----
+    const aBody = $("#au-body");
+    const au = { loaded: false, timer: null };
+    const leftTxt = iso => {
+      let s = Math.max(Math.floor((new Date(iso) - Date.now()) / 1000), 0);
+      const d = Math.floor(s / 86400); s %= 86400;
+      const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+      return d ? t("au_left_dh", { d, h }) : t("au_left_hm", { h, m });
+    };
+    const auRow = a => {
+      const closing = a.status === "active" && new Date(a.ends_at) <= Date.now();
+      const st = a.status === "sold" ? "sold" : closing ? "closing" : a.status;
+      const badge = `<span class="badge ${st === "sold" ? "bad" : st === "idle" ? "" : "ok"}">${esc(t("au_st_" + st))}</span>`;
+      const price = a.status === "idle" ? `${a.price} ⭐ · ${esc(t("au_start"))}` : `${a.price} ⭐`;
+      const time = a.status === "active" && !closing ? esc(leftTxt(a.ends_at)) : "—";
+      const action = a.status === "sold" ? "" :
+        `<a class="btn btn-line btn-sm" href="${esc(C.BOT)}?start=a_${a.num}" rel="noopener noreferrer">${esc(t("au_bid"))}</a>`;
+      return `<div class="au-row" role="listitem"><span class="lic">${esc(a.id)}</span><span>${badge}</span><span>${price}</span><span>${time}</span><span>${action}</span></div>`;
+    };
+    async function loadAuction() {
+      try {
+        const data = await api("/api/auctions");
+        au.loaded = true;
+        aBody.innerHTML = data.items.map(auRow).join("");
+      } catch (e) {
+        if (!au.loaded) aBody.innerHTML = `<div class="empty">${esc(t("au_error"))}</div>`;
+      }
+    }
+    function startAuction() {
+      if (au.timer) return;
+      if (!au.loaded) aBody.innerHTML = `<div class="empty">${esc(t("au_loading"))}</div>`;
+      loadAuction();
+      au.timer = setInterval(loadAuction, 60000);
+    }
+    function stopAuction() { clearInterval(au.timer); au.timer = null; }
 
     const row = r => `
       <a class="reg-row" role="listitem" href="/registry/${esc(r.id)}">
@@ -84,6 +120,7 @@
         const r = await api("/api/registry/" + num);
         if (r.notFound) return card(`<h2>${esc(t("res_nf_title"))}</h2><p>${esc(t("res_nf_text"))}</p>` + back);
         document.title = t("doc_title", { title: r.title, id: r.id });
+        if (r.id !== id.toUpperCase()) history.replaceState(null, "", "/registry/" + r.id);
         const ok = r.active;
         card(`
           <span class="badge ${ok ? "ok" : "bad"}">${esc(t(ok ? "res_ok" : "res_bad"))}</span>

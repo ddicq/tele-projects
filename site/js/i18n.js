@@ -26,7 +26,10 @@
       dt_langs: "Языки", dt_date: "Дата подтверждения",
       btn_go: "Перейти к ресурсу", btn_report: "Подать жалобу в боте", btn_all: "Весь реестр",
       res_err_title: "Не удалось загрузить данные", res_err_text: "Сервис проверки временно недоступен. Повторите попытку через минуту.",
-      doc_title: "{title} — лицензия {id}"
+      doc_title: "{title} — лицензия {id}",
+      au_loading: "Загрузка аукциона…", au_error: "Аукцион временно недоступен. Повторите попытку через минуту.",
+      au_st_idle: "Ожидает первой ставки", au_st_active: "Идёт аукцион", au_st_closing: "Завершается", au_st_sold: "Продан",
+      au_left_dh: "{d} д {h} ч", au_left_hm: "{h} ч {m} мин", au_bid: "Сделать ставку", au_start: "старт", au_bids: "ставок: {n}"
     },
     en: {
       kind_channel: "Channel", kind_chat: "Chat", kind_bot: "Bot",
@@ -44,7 +47,10 @@
       dt_langs: "Languages", dt_date: "Verified on",
       btn_go: "Go to the resource", btn_report: "Report in the bot", btn_all: "Full registry",
       res_err_title: "Could not load the data", res_err_text: "The verification service is temporarily unavailable. Please try again in a minute.",
-      doc_title: "{title} — license {id}"
+      doc_title: "{title} — license {id}",
+      au_loading: "Loading the auction…", au_error: "The auction is temporarily unavailable. Please try again in a minute.",
+      au_st_idle: "Waiting for the first bid", au_st_active: "In progress", au_st_closing: "Ending", au_st_sold: "Sold",
+      au_left_dh: "{d}d {h}h", au_left_hm: "{h}h {m}m", au_bid: "Place a bid", au_start: "start", au_bids: "bids: {n}"
     }
   };
 

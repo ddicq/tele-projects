@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS registry (
 );
 CREATE TABLE IF NOT EXISTS complaints (
     id          SERIAL PRIMARY KEY,
-    registry_id INT NOT NULL REFERENCES registry(id),
+    registry_id INT NOT NULL REFERENCES registry(id) ON UPDATE CASCADE,
     user_id     BIGINT NOT NULL,
     reason      TEXT NOT NULL,
     status      TEXT NOT NULL DEFAULT 'open',
@@ -63,6 +63,35 @@ CREATE TABLE IF NOT EXISTS users (
     lang    TEXT NOT NULL DEFAULT 'ru'
 );
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+CREATE TABLE IF NOT EXISTS auctions (
+    number       INT PRIMARY KEY,
+    start_price  INT NOT NULL,
+    status       TEXT NOT NULL DEFAULT 'idle',
+    top_user_id  BIGINT,
+    top_amount   INT,
+    started_at   TIMESTAMPTZ,
+    ends_at      TIMESTAMPTZ,
+    winner_id    BIGINT,
+    final_amount INT,
+    sold_at      TIMESTAMPTZ
+);
+CREATE TABLE IF NOT EXISTS auction_bids (
+    id         SERIAL PRIMARY KEY,
+    number     INT NOT NULL REFERENCES auctions(number),
+    user_id    BIGINT NOT NULL,
+    amount     INT NOT NULL,
+    charge_id  TEXT NOT NULL UNIQUE,
+    status     TEXT NOT NULL DEFAULT 'leading',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_bids_number ON auction_bids (number, status);
+CREATE TABLE IF NOT EXISTS license_aliases (
+    old_number INT PRIMARY KEY,
+    new_number INT NOT NULL
+);
+ALTER TABLE auctions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE auction_bids ENABLE ROW LEVEL SECURITY;
+ALTER TABLE license_aliases ENABLE ROW LEVEL SECURITY;
 CREATE INDEX IF NOT EXISTS idx_registry_active ON registry (active, approved_at DESC);
 """
 
@@ -72,6 +101,10 @@ async def init() -> None:
     # statement_cache_size=0 — совместимость с pgbouncer (Supabase pooler)
     pool = await asyncpg.create_pool(config.DATABASE_URL, min_size=1, max_size=5, statement_cache_size=0)
     await pool.execute(SCHEMA)
+    await pool.executemany(
+        "INSERT INTO auctions (number, start_price) VALUES ($1,$2) ON CONFLICT (number) DO NOTHING",
+        list(config.AUCTION_LOTS.items()),
+    )
 
 
 # ---------- заявки ----------
@@ -102,6 +135,18 @@ async def get_application(app_id: int):
     return await pool.fetchrow("SELECT * FROM applications WHERE id=$1", app_id)
 
 
+async def _next_license_id(c) -> int:
+    """Следующий обычный номер: пропускает номера аукциона, занятые и ранее использованные."""
+    while True:
+        n = await c.fetchval("SELECT nextval(pg_get_serial_sequence('registry','id'))")
+        taken = await c.fetchval(
+            """SELECT 1 FROM auctions WHERE number=$1
+               UNION ALL SELECT 1 FROM registry WHERE id=$1
+               UNION ALL SELECT 1 FROM license_aliases WHERE old_number=$1 LIMIT 1""", n)
+        if not taken:
+            return n
+
+
 async def approve_application(app_id: int, mod_id: int):
     """Атомарно одобряет заявку и создаёт запись в реестре. None — если заявка уже обработана."""
     async with pool.acquire() as c:
@@ -113,10 +158,11 @@ async def approve_application(app_id: int, mod_id: int):
             )
             if not app:
                 return None
+            new_id = await _next_license_id(c)
             return await c.fetchrow(
-                """INSERT INTO registry (application_id,user_id,kind,title,username,purpose,countries,languages)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *""",
-                app["id"], app["user_id"], app["kind"], app["title"], app["username"],
+                """INSERT INTO registry (id,application_id,user_id,kind,title,username,purpose,countries,languages)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *""",
+                new_id, app["id"], app["user_id"], app["kind"], app["title"], app["username"],
                 app["purpose"], app["countries"], app["languages"],
             )
 
@@ -140,7 +186,12 @@ async def user_applications(user_id: int, limit: int = 15):
 
 # ---------- реестр ----------
 async def get_registry(reg_id: int):
-    return await pool.fetchrow("SELECT * FROM registry WHERE id=$1", reg_id)
+    """Лицензия по номеру. Если номер был заменён на номер с аукциона — возвращает актуальную запись."""
+    row = await pool.fetchrow("SELECT * FROM registry WHERE id=$1", reg_id)
+    if row:
+        return row
+    return await pool.fetchrow(
+        "SELECT r.* FROM license_aliases a JOIN registry r ON r.id = a.new_number WHERE a.old_number=$1", reg_id)
 
 
 async def list_registry(q: str | None, kind: str | None, limit: int, offset: int):
@@ -233,3 +284,103 @@ async def set_lang(user_id: int, lang: str) -> None:
            ON CONFLICT (user_id) DO UPDATE SET lang = EXCLUDED.lang""",
         user_id, lang,
     )
+
+
+# ---------- аукцион номеров ----------
+async def list_auctions():
+    return await pool.fetch(
+        """SELECT a.*, (SELECT count(*) FROM auction_bids b WHERE b.number = a.number) AS bids
+           FROM auctions a ORDER BY a.number""")
+
+
+async def get_auction(number: int):
+    return await pool.fetchrow("SELECT * FROM auctions WHERE number=$1", number)
+
+
+async def place_bid(number: int, user_id: int, amount: int, charge_id: str, step: int, days: int) -> dict:
+    """Атомарно принимает оплаченную ставку. Возвращает {'status': ok|dup|ended|low|self|none, ...}."""
+    async with pool.acquire() as c:
+        async with c.transaction():
+            a = await c.fetchrow("SELECT * FROM auctions WHERE number=$1 FOR UPDATE", number)
+            if not a:
+                return {"status": "none"}
+            if await c.fetchval("SELECT 1 FROM auction_bids WHERE charge_id=$1", charge_id):
+                return {"status": "dup"}
+            now = await c.fetchval("SELECT now()")
+            if a["status"] == "sold" or (a["status"] == "active" and a["ends_at"] <= now):
+                return {"status": "ended"}
+            if a["status"] == "active" and a["top_user_id"] == user_id:
+                return {"status": "self"}
+            min_amount = a["start_price"] if a["status"] == "idle" else a["top_amount"] + step
+            if amount < min_amount:
+                return {"status": "low", "min": min_amount}
+            prev = None
+            if a["status"] == "active":
+                prev = await c.fetchrow(
+                    "SELECT * FROM auction_bids WHERE number=$1 AND status='leading'", number)
+                if prev:
+                    await c.execute("UPDATE auction_bids SET status='outbid' WHERE id=$1", prev["id"])
+            await c.execute(
+                "INSERT INTO auction_bids (number,user_id,amount,charge_id,status) VALUES ($1,$2,$3,$4,'leading')",
+                number, user_id, amount, charge_id)
+            if a["status"] == "idle":
+                a = await c.fetchrow(
+                    """UPDATE auctions SET status='active', started_at=now(),
+                              ends_at=now() + make_interval(days => $4), top_user_id=$2, top_amount=$3
+                       WHERE number=$1 RETURNING *""", number, user_id, amount, days)
+                return {"status": "ok", "prev": None, "ends_at": a["ends_at"], "first": True}
+            a = await c.fetchrow(
+                "UPDATE auctions SET top_user_id=$2, top_amount=$3 WHERE number=$1 RETURNING *",
+                number, user_id, amount)
+            return {"status": "ok", "prev": prev, "ends_at": a["ends_at"], "first": False}
+
+
+async def set_bid_status(bid_id: int, status: str) -> None:
+    await pool.execute("UPDATE auction_bids SET status=$2 WHERE id=$1", bid_id, status)
+
+
+async def finish_due_auctions():
+    """Завершает аукционы, у которых вышло время. Возвращает проданные лоты."""
+    async with pool.acquire() as c:
+        async with c.transaction():
+            rows = await c.fetch(
+                """UPDATE auctions SET status='sold', winner_id=top_user_id, final_amount=top_amount, sold_at=now()
+                   WHERE status='active' AND ends_at <= now() RETURNING *""")
+            for r in rows:
+                await c.execute("UPDATE auction_bids SET status='won' WHERE number=$1 AND status='leading'", r["number"])
+            return rows
+
+
+async def user_numbers(user_id: int):
+    return await pool.fetch(
+        """SELECT a.*, r.title AS assigned_title, (r.id IS NOT NULL) AS assigned
+           FROM auctions a LEFT JOIN registry r ON r.id = a.number
+           WHERE a.winner_id=$1 AND a.status='sold' ORDER BY a.number""", user_id)
+
+
+async def eligible_resources(user_id: int):
+    """Действующие ресурсы пользователя с обычным номером."""
+    return await pool.fetch(
+        """SELECT * FROM registry r
+           WHERE r.user_id=$1 AND r.active AND NOT EXISTS (SELECT 1 FROM auctions a WHERE a.number = r.id)
+           ORDER BY r.id""", user_id)
+
+
+async def assign_number(number: int, user_id: int, reg_id: int) -> dict:
+    """Присваивает купленный номер ресурсу: меняет номер в реестре, старый номер остаётся ссылкой-перенаправлением."""
+    async with pool.acquire() as c:
+        async with c.transaction():
+            a = await c.fetchrow(
+                "SELECT * FROM auctions WHERE number=$1 AND winner_id=$2 AND status='sold' FOR UPDATE", number, user_id)
+            if not a or await c.fetchval("SELECT 1 FROM registry WHERE id=$1", number):
+                return {"status": "fail"}
+            r = await c.fetchrow("SELECT * FROM registry WHERE id=$1 AND user_id=$2 AND active FOR UPDATE", reg_id, user_id)
+            if not r or await c.fetchval("SELECT 1 FROM auctions WHERE number=$1", r["id"]):
+                return {"status": "fail"}
+            old = r["id"]
+            await c.execute("UPDATE registry SET id=$1 WHERE id=$2", number, old)  # жалобы переедут каскадом
+            await c.execute("UPDATE license_aliases SET new_number=$1 WHERE new_number=$2", number, old)
+            await c.execute(
+                """INSERT INTO license_aliases (old_number,new_number) VALUES ($1,$2)
+                   ON CONFLICT (old_number) DO UPDATE SET new_number = EXCLUDED.new_number""", old, number)
+            return {"status": "ok", "old": old, "title": r["title"]}

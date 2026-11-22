@@ -160,3 +160,17 @@ p{margin:0 0 1em}
   .brand .bn{display:none}
   .site-header nav a{padding:8px 10px;font-size:.9rem}
 }
+
+/* аукцион */
+.au-head,.au-row{display:grid;grid-template-columns:1fr 1.6fr 1.3fr 1fr auto;gap:16px;padding:14px 22px;align-items:center}
+.au-head{color:var(--muted);font-size:.82rem;font-weight:500;background:#FAFBFD;border-bottom:1px solid var(--line)}
+.au-row{border-bottom:1px solid var(--line)}
+.au-row:last-child{border-bottom:0}
+.au-row .badge:not(.ok):not(.bad){background:#EEF2F8;color:var(--muted)}
+.btn-sm{padding:7px 16px;font-size:.85rem}
+@media (max-width:820px){
+  .au-head{display:none}
+  .au-row{grid-template-columns:1fr 1fr;gap:8px 12px}
+  .au-row > span:last-child{grid-column:1/-1}
+  .au-row > span:last-child:empty{display:none}
+}

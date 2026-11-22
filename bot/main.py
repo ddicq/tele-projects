@@ -2,6 +2,7 @@ import asyncio
 import html
 import logging
 import re
+from datetime import datetime, timezone
 
 from aiogram import BaseMiddleware, Bot, Dispatcher, F, Router
 from aiogram.client.default import DefaultBotProperties
@@ -11,7 +12,8 @@ from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import CallbackQuery, ForceReply, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import (CallbackQuery, ForceReply, InlineKeyboardButton, InlineKeyboardMarkup, LabeledPrice,
+                           Message, PreCheckoutQuery)
 from aiohttp import web
 
 import config
@@ -57,6 +59,7 @@ def main_menu(lang: str) -> InlineKeyboardMarkup:
     return kb([
         [btn(tr(lang, "b_apply"), "menu:apply")],
         [btn(tr(lang, "b_my"), "menu:my"), btn(tr(lang, "b_rules"), "menu:rules")],
+        [btn(tr(lang, "b_auction"), "au:list"), btn(tr(lang, "b_mynums"), "mn:list")],
         [btn(tr(lang, "b_docs"), "menu:docs"), btn(tr(lang, "b_site"), url=config.SITE_URL)],
         [btn(tr(lang, "b_news"), url=config.NEWS_CHANNEL)],
         [btn(tr(lang, "b_lang"), "menu:lang")],
@@ -250,6 +253,7 @@ private.message.filter(F.chat.type == ChatType.PRIVATE)
 private.callback_query.filter(F.message.chat.type == ChatType.PRIVATE)
 private.message.middleware(LangMiddleware())
 private.callback_query.middleware(LangMiddleware())
+private.pre_checkout_query.middleware(LangMiddleware())
 
 
 class Form(StatesGroup):
@@ -275,6 +279,13 @@ async def cmd_start(m: Message, command: CommandObject, state: FSMContext, lang:
     arg = command.args or ""
     if arg.startswith("v_") and arg[2:].isdigit():
         await show_verification(m, int(arg[2:]), lang)
+        return
+    if arg.startswith("a_") and arg[2:].isdigit():
+        content = await lot_content(int(arg[2:]), m.from_user.id, lang)
+        if content:
+            await m.answer(content[0], reply_markup=content[1])
+        else:
+            await m.answer(tr(lang, "lot_missing"), reply_markup=main_menu(lang))
         return
     if await stored_lang(m.from_user.id) is None:
         await m.answer(tr("ru", "pick_lang"), reply_markup=lang_picker())
@@ -593,11 +604,11 @@ async def complaint_start(cb: CallbackQuery, state: FSMContext, lang: str):
     reg = await db.get_registry(reg_id)
     if not reg or not reg["active"]:
         return await cb.answer(tr(lang, "c_revoked_alert"), show_alert=True)
-    if await db.open_complaint_exists(reg_id, cb.from_user.id):
+    if await db.open_complaint_exists(reg["id"], cb.from_user.id):
         return await cb.answer(tr(lang, "c_exists_alert"), show_alert=True)
     await state.clear()
     await state.set_state(ComplaintForm.reason)
-    await state.update_data(reg_id=reg_id)
+    await state.update_data(reg_id=reg["id"])
     await cb.message.answer(tr(lang, "c_prompt", title=esc(reg["title"])), reply_markup=cancel_kb(lang))
     await cb.answer()
 
@@ -613,7 +624,7 @@ async def complaint_reason(m: Message, state: FSMContext, bot: Bot, lang: str):
     if not reg or not reg["active"]:
         return await m.answer(tr(lang, "c_revoked"), reply_markup=main_menu(lang))
     await set_user_lang(m.from_user.id, lang)
-    c = await db.create_complaint(reg_id, m.from_user.id, reason)
+    c = await db.create_complaint(reg["id"], m.from_user.id, reason)
     try:
         sent = await bot.send_message(
             config.MOD_CHAT_ID, complaint_card(c, reg), message_thread_id=config.TOPIC_COMPLAINTS,
@@ -746,6 +757,357 @@ async def complaint_bad(cb: CallbackQuery, bot: Bot):
     await cb.answer("Ресурс удалён из реестра")
 
 
+# =====================================================================
+#                         АУКЦИОН НОМЕРОВ
+# =====================================================================
+class BidForm(StatesGroup):
+    amount = State()
+
+
+def now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def fdt(dt) -> str:
+    return dt.astimezone(timezone.utc).strftime("%d.%m.%Y %H:%M UTC")
+
+
+def left_text(ends, lang: str) -> str:
+    secs = max(int((ends - now_utc()).total_seconds()), 0)
+    d, rem = divmod(secs, 86400)
+    h, rem = divmod(rem, 3600)
+    if d:
+        return tr(lang, "left_dh", d=d, h=h)
+    return tr(lang, "left_hm", h=h, m=rem // 60)
+
+
+def lot_label(a, user_id: int, lang: str) -> str:
+    n = lic(a["number"])
+    if a["status"] == "sold":
+        return f"{n} · {tr(lang, 'sold_short')}"
+    if a["status"] == "active":
+        mark = "✓ " if a["top_user_id"] == user_id else ""
+        return f"{mark}{n} · {a['top_amount']} ⭐"
+    return f"{n} · {a['start_price']} ⭐"
+
+
+async def notify_mods(bot: Bot, text: str) -> None:
+    try:
+        await bot.send_message(config.MOD_CHAT_ID, text, message_thread_id=config.TOPIC_APPLICATIONS)
+    except TelegramAPIError as e:
+        log.warning("Не удалось написать в чат модераторов: %s", e)
+
+
+async def refund(bot: Bot, user_id: int, charge_id: str) -> bool:
+    try:
+        await bot.refund_star_payment(user_id=user_id, telegram_payment_charge_id=charge_id)
+        return True
+    except TelegramAPIError as e:
+        log.error("Не удалось вернуть звёзды user=%s charge=%s: %s", user_id, charge_id, e)
+        return False
+
+
+async def auction_list_content(user_id: int, lang: str):
+    lots = await db.list_auctions()
+    rows = grid([btn(lot_label(a, user_id, lang), f"au:{a['number']}") for a in lots])
+    rows += [[btn(tr(lang, "b_mynums"), "mn:list")],
+             [btn(tr(lang, "b_site_auction"), url=f"{config.SITE_URL}/tele-license#auction")],
+             [btn(tr(lang, "b_home"), "menu:home")]]
+    return tr(lang, "au_intro"), kb(rows)
+
+
+async def lot_content(number: int, user_id: int, lang: str):
+    a = await db.get_auction(number)
+    if not a:
+        return None
+    n = lic(number)
+    rows = []
+    if a["status"] == "sold":
+        text = tr(lang, "lot_sold", lic=n, price=a["final_amount"])
+        if a["winner_id"] == user_id:
+            text += "\n\n" + tr(lang, "lot_yours")
+            rows.append([btn(tr(lang, "b_mynums"), "mn:list")])
+    elif a["status"] == "active" and a["ends_at"] <= now_utc():
+        text = tr(lang, "lot_closing", lic=n, price=a["top_amount"])
+    else:
+        if a["status"] == "idle":
+            base = a["start_price"]
+            text = tr(lang, "lot_idle", lic=n, price=base)
+            amounts = [base, base + 50, base + 100]
+        else:
+            top = a["top_amount"]
+            text = tr(lang, "lot_active", lic=n, price=top, left=left_text(a["ends_at"], lang),
+                      ends=fdt(a["ends_at"]), min=top + config.BID_STEP)
+            amounts = [top + config.BID_STEP, top + 50, top + 100]
+        if a["status"] == "active" and a["top_user_id"] == user_id:
+            text += "\n\n" + tr(lang, "lot_leading")
+        else:
+            amounts = [x for x in amounts if x <= config.MAX_BID]
+            if amounts:
+                rows.append([btn(f"{x} ⭐", f"bid:{number}:{x}") for x in amounts])
+            rows.append([btn(tr(lang, "b_custom"), f"bidc:{number}")])
+    rows.append([btn(tr(lang, "b_back_auction"), "au:list")])
+    rows.append([btn(tr(lang, "b_home"), "menu:home")])
+    return text, kb(rows)
+
+
+async def check_bid(number: int, user_id: int, amount: int):
+    """None, если ставку можно принять. Иначе (ключ_ошибки, параметры)."""
+    a = await db.get_auction(number)
+    if not a:
+        return "bid_err_bad", {}
+    if a["status"] == "sold" or (a["status"] == "active" and a["ends_at"] <= now_utc()):
+        return "bid_err_ended", {}
+    if a["status"] == "active" and a["top_user_id"] == user_id:
+        return "bid_err_self", {}
+    min_bid = a["start_price"] if a["status"] == "idle" else a["top_amount"] + config.BID_STEP
+    if amount < min_bid:
+        return "bid_err_low", {"min": min_bid}
+    if amount > config.MAX_BID:
+        return "bid_err_max", {"max": config.MAX_BID}
+    return None
+
+
+async def send_bid_invoice(bot: Bot, user_id: int, number: int, amount: int, lang: str) -> bool:
+    try:
+        await bot.send_invoice(
+            chat_id=user_id,
+            title=tr(lang, "inv_title", lic=lic(number)),
+            description=tr(lang, "inv_desc", amount=amount),
+            payload=f"bid:{number}:{amount}",
+            currency="XTR",
+            prices=[LabeledPrice(label=tr(lang, "inv_label", lic=lic(number)), amount=amount)],
+        )
+        return True
+    except TelegramAPIError as e:
+        log.error("Не удалось выставить счёт: %s", e)
+        return False
+
+
+@private.callback_query(F.data == "au:list")
+async def au_list(cb: CallbackQuery, state: FSMContext, lang: str):
+    await state.clear()
+    text, markup = await auction_list_content(cb.from_user.id, lang)
+    await show(cb, text, markup)
+    await cb.answer()
+
+
+@private.callback_query(F.data.regexp(r"^au:\d+$"))
+async def au_lot(cb: CallbackQuery, state: FSMContext, lang: str):
+    await state.clear()
+    content = await lot_content(int(cb.data.split(":")[1]), cb.from_user.id, lang)
+    if not content:
+        return await cb.answer(tr(lang, "lot_missing"), show_alert=True)
+    await show(cb, content[0], content[1])
+    await cb.answer()
+
+
+@private.callback_query(F.data.regexp(r"^bid:\d+:\d+$"))
+async def au_bid(cb: CallbackQuery, bot: Bot, lang: str):
+    _, number, amount = cb.data.split(":")
+    number, amount = int(number), int(amount)
+    err = await check_bid(number, cb.from_user.id, amount)
+    if err:
+        return await cb.answer(tr(lang, err[0], **err[1]), show_alert=True)
+    if await send_bid_invoice(bot, cb.from_user.id, number, amount, lang):
+        await cb.answer(tr(lang, "inv_sent", amount=amount), show_alert=True)
+    else:
+        await cb.answer(tr(lang, "inv_fail"), show_alert=True)
+
+
+@private.callback_query(F.data.regexp(r"^bidc:\d+$"))
+async def au_bid_custom(cb: CallbackQuery, state: FSMContext, lang: str):
+    number = int(cb.data.split(":")[1])
+    err = await check_bid(number, cb.from_user.id, config.MAX_BID)
+    if err and err[0] != "bid_err_max":
+        return await cb.answer(tr(lang, err[0], **err[1]), show_alert=True)
+    a = await db.get_auction(number)
+    min_bid = a["start_price"] if a["status"] == "idle" else a["top_amount"] + config.BID_STEP
+    await state.clear()
+    await state.set_state(BidForm.amount)
+    await state.update_data(number=number)
+    await cb.message.answer(tr(lang, "bid_custom_prompt", min=min_bid, max=config.MAX_BID), reply_markup=cancel_kb(lang))
+    await cb.answer()
+
+
+@private.message(BidForm.amount, F.text)
+async def au_bid_amount(m: Message, state: FSMContext, bot: Bot, lang: str):
+    number = (await state.get_data())["number"]
+    digits = re.sub(r"[\s,._]", "", m.text)
+    a = await db.get_auction(number)
+    min_bid = a["start_price"] if a and a["status"] == "idle" else (a["top_amount"] + config.BID_STEP if a else 0)
+    if not digits.isdigit():
+        return await m.answer(tr(lang, "bid_custom_nan", min=min_bid))
+    amount = int(digits)
+    err = await check_bid(number, m.from_user.id, amount)
+    if err:
+        return await m.answer(tr(lang, err[0], **err[1]))
+    await state.clear()
+    if await send_bid_invoice(bot, m.from_user.id, number, amount, lang):
+        await m.answer(tr(lang, "inv_sent", amount=amount))
+    else:
+        await m.answer(tr(lang, "inv_fail"))
+
+
+@private.pre_checkout_query()
+async def pre_checkout(q: PreCheckoutQuery, lang: str):
+    parts = (q.invoice_payload or "").split(":")
+    if len(parts) != 3 or parts[0] != "bid" or not parts[1].isdigit() or not parts[2].isdigit() \
+            or q.currency != "XTR" or q.total_amount != int(parts[2]):
+        return await q.answer(ok=False, error_message=tr(lang, "bid_err_bad"))
+    err = await check_bid(int(parts[1]), q.from_user.id, int(parts[2]))
+    if err:
+        return await q.answer(ok=False, error_message=tr(lang, err[0], **err[1]))
+    await q.answer(ok=True)
+
+
+@private.message(F.successful_payment)
+async def on_paid(m: Message, bot: Bot, lang: str):
+    sp = m.successful_payment
+    uid = m.from_user.id
+    parts = (sp.invoice_payload or "").split(":")
+    if len(parts) != 3 or parts[0] != "bid" or not parts[1].isdigit():
+        log.error("Неизвестный платёж: %s", sp.invoice_payload)
+        await notify_mods(bot, f"⚠️ Неизвестный платёж Stars: {esc(sp.invoice_payload)}, пользователь {uid}, "
+                               f"{sp.total_amount} ⭐, charge <code>{esc(sp.telegram_payment_charge_id)}</code>")
+        return
+    number = int(parts[1])
+    res = await db.place_bid(number, uid, sp.total_amount, sp.telegram_payment_charge_id, config.BID_STEP, config.AUCTION_DAYS)
+    status = res["status"]
+    if status == "dup":
+        return
+    if status != "ok":
+        key = {"ended": "bid_err_ended", "low": "bid_err_low", "self": "bid_err_self"}.get(status, "bid_err_bad")
+        reason = tr(lang, key, min=res.get("min", 0))
+        ok = await refund(bot, uid, sp.telegram_payment_charge_id)
+        await m.answer(tr(lang, "bid_refunded" if ok else "bid_refund_fail", reason=reason, amount=sp.total_amount),
+                       reply_markup=kb([[btn(tr(lang, "b_back_auction"), "au:list")]]))
+        if not ok:
+            await notify_mods(bot, f"⚠️ Нужен ручной возврат: пользователь {uid}, {sp.total_amount} ⭐, "
+                                   f"charge <code>{esc(sp.telegram_payment_charge_id)}</code> (лот {lic(number)})")
+        return
+
+    await set_user_lang(uid, lang)
+    await m.answer(tr(lang, "bid_ok", lic=lic(number), amount=sp.total_amount, ends=fdt(res["ends_at"]),
+                      left=left_text(res["ends_at"], lang)),
+                   reply_markup=kb([[btn(tr(lang, "b_back_auction"), "au:list")]]))
+    if res["first"]:
+        await notify_mods(bot, f"Аукцион запущен: {lic(number)}, первая ставка {sp.total_amount} ⭐, "
+                               f"завершится {fdt(res['ends_at'])}.")
+    prev = res["prev"]
+    if prev:
+        ok = await refund(bot, prev["user_id"], prev["charge_id"])
+        await db.set_bid_status(prev["id"], "refunded" if ok else "refund_failed")
+        pl = await ulang(prev["user_id"])
+        await notify(bot, prev["user_id"],
+                     tr(pl, "outbid" if ok else "outbid_fail", lic=lic(number), amount=sp.total_amount, refund=prev["amount"]),
+                     kb([[btn(tr(pl, "b_auction"), f"au:{number}")]]))
+        if not ok:
+            await notify_mods(bot, f"⚠️ Нужен ручной возврат: пользователь {prev['user_id']}, {prev['amount']} ⭐, "
+                                   f"charge <code>{esc(prev['charge_id'])}</code> (лот {lic(number)}, ставку перебили)")
+
+
+async def auction_worker(bot: Bot) -> None:
+    """Раз в минуту завершает аукционы, у которых вышло время."""
+    while True:
+        try:
+            for a in await db.finish_due_auctions():
+                l = await ulang(a["winner_id"])
+                await notify(bot, a["winner_id"], tr(l, "won", lic=lic(a["number"]), price=a["final_amount"]),
+                             kb([[btn(tr(l, "b_mynums"), "mn:list")]]))
+                await notify_mods(bot, f"Аукцион завершён: {lic(a['number'])} продан за {a['final_amount']} ⭐, "
+                                       f"покупатель <a href=\"tg://user?id={a['winner_id']}\">{a['winner_id']}</a>.")
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("Ошибка в обработчике аукционов")
+        await asyncio.sleep(60)
+
+
+# ----- мои номера -----
+async def nums_list_content(user_id: int, lang: str):
+    rows_db = await db.user_numbers(user_id)
+    if not rows_db:
+        return tr(lang, "nums_none"), kb([[btn(tr(lang, "b_auction"), "au:list")], [btn(tr(lang, "b_home"), "menu:home")]])
+    rows = grid([btn(f"{lic(r['number'])} · {tr(lang, 'num_used' if r['assigned'] else 'num_free')}", f"mn:{r['number']}")
+                 for r in rows_db])
+    rows += [[btn(tr(lang, "b_auction"), "au:list")], [btn(tr(lang, "b_home"), "menu:home")]]
+    return tr(lang, "nums_header"), kb(rows)
+
+
+async def owned_number(user_id: int, number: int):
+    return next((r for r in await db.user_numbers(user_id) if r["number"] == number), None)
+
+
+@private.callback_query(F.data == "mn:list")
+async def mn_list(cb: CallbackQuery, state: FSMContext, lang: str):
+    await state.clear()
+    text, markup = await nums_list_content(cb.from_user.id, lang)
+    await show(cb, text, markup)
+    await cb.answer()
+
+
+@private.callback_query(F.data.regexp(r"^mn:\d+$"))
+async def mn_detail(cb: CallbackQuery, lang: str):
+    number = int(cb.data.split(":")[1])
+    r = await owned_number(cb.from_user.id, number)
+    if not r:
+        return await cb.answer(tr(lang, "lot_missing"), show_alert=True)
+    rows = []
+    if r["assigned"]:
+        text = tr(lang, "num_detail_used", lic=lic(number), price=r["final_amount"], title=esc(r["assigned_title"]))
+    else:
+        text = tr(lang, "num_detail_free", lic=lic(number), price=r["final_amount"])
+        rows.append([btn(tr(lang, "b_assign"), f"mna:{number}")])
+    rows.append([btn(tr(lang, "b_back_nums"), "mn:list")])
+    await show(cb, text, kb(rows))
+    await cb.answer()
+
+
+@private.callback_query(F.data.regexp(r"^mna:\d+$"))
+async def mn_assign_pick(cb: CallbackQuery, lang: str):
+    number = int(cb.data.split(":")[1])
+    r = await owned_number(cb.from_user.id, number)
+    if not r or r["assigned"]:
+        return await cb.answer(tr(lang, "assign_fail"), show_alert=True)
+    resources = await db.eligible_resources(cb.from_user.id)
+    back = [btn(tr(lang, "b_back_nums"), f"mn:{number}")]
+    if not resources:
+        await show(cb, tr(lang, "assign_none"), kb([back]))
+        return await cb.answer()
+    rows = [[btn(f"{x['title']} · {lic(x['id'])}", f"mnc:{number}:{x['id']}")] for x in resources[:20]]
+    await show(cb, tr(lang, "assign_pick", lic=lic(number)), kb(rows + [back]))
+    await cb.answer()
+
+
+@private.callback_query(F.data.regexp(r"^mnc:\d+:\d+$"))
+async def mn_assign_confirm(cb: CallbackQuery, lang: str):
+    _, number, reg_id = cb.data.split(":")
+    number, reg_id = int(number), int(reg_id)
+    resources = {x["id"]: x for x in await db.eligible_resources(cb.from_user.id)}
+    r = await owned_number(cb.from_user.id, number)
+    if not r or r["assigned"] or reg_id not in resources:
+        return await cb.answer(tr(lang, "assign_fail"), show_alert=True)
+    await show(cb, tr(lang, "assign_confirm", title=esc(resources[reg_id]["title"]), old=lic(reg_id), new=lic(number)),
+               kb([[btn(tr(lang, "b_confirm"), f"mnd:{number}:{reg_id}")], [btn(tr(lang, "b_cancel"), f"mn:{number}")]]))
+    await cb.answer()
+
+
+@private.callback_query(F.data.regexp(r"^mnd:\d+:\d+$"))
+async def mn_assign_do(cb: CallbackQuery, bot: Bot, lang: str):
+    _, number, reg_id = cb.data.split(":")
+    number, reg_id = int(number), int(reg_id)
+    res = await db.assign_number(number, cb.from_user.id, reg_id)
+    if res["status"] != "ok":
+        return await cb.answer(tr(lang, "assign_fail"), show_alert=True)
+    link = await verify_url(bot, number)
+    await show(cb, tr(lang, "assign_done", title=esc(res["title"]), new=lic(number), link=link),
+               kb([[btn(tr(lang, "b_verify"), url=link)], [btn(tr(lang, "b_reg_page"), url=site_url(number))],
+                   [btn(tr(lang, "b_back_nums"), "mn:list")]]))
+    await notify_mods(bot, f"Номер {lic(number)} присвоен ресурсу «{esc(res['title'])}» (был {lic(res['old'])}).")
+    await cb.answer()
+
+
 # ---------- запасной обработчик в личке ----------
 @private.message()
 async def fallback(m: Message, state: FSMContext, lang: str):
@@ -803,6 +1165,18 @@ async def api_item(request: web.Request) -> web.Response:
     return web.json_response(pub(r))
 
 
+async def api_auctions(_: web.Request) -> web.Response:
+    items = []
+    for a in await db.list_auctions():
+        st = a["status"]
+        price = a["final_amount"] if st == "sold" else (a["top_amount"] if st == "active" else a["start_price"])
+        items.append({
+            "id": lic(a["number"]), "num": a["number"], "status": st, "start_price": a["start_price"],
+            "price": price, "bids": a["bids"], "ends_at": a["ends_at"].isoformat() if a["ends_at"] else None,
+        })
+    return web.json_response({"items": items})
+
+
 async def health(_: web.Request) -> web.Response:
     return web.Response(text="ok")
 
@@ -819,6 +1193,7 @@ async def main():
     app.router.add_get("/health", health)
     app.router.add_get("/api/registry", api_list)
     app.router.add_get("/api/registry/{ident}", api_item)
+    app.router.add_get("/api/auctions", api_auctions)
     runner = web.AppRunner(app)
     await runner.setup()
     await web.TCPSite(runner, "0.0.0.0", config.PORT).start()
@@ -827,9 +1202,11 @@ async def main():
     me = await bot.me()
     log.info("Бот запущен: @%s", me.username)
     await bot.delete_webhook(drop_pending_updates=False)
+    worker = asyncio.create_task(auction_worker(bot))
     try:
-        await dp.start_polling(bot, allowed_updates=["message", "callback_query"])
+        await dp.start_polling(bot, allowed_updates=["message", "callback_query", "pre_checkout_query"])
     finally:
+        worker.cancel()
         await runner.cleanup()
         await bot.session.close()
 
