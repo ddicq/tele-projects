@@ -174,3 +174,36 @@ p{margin:0 0 1em}
   .au-row > span:last-child{grid-column:1/-1}
   .au-row > span:last-child:empty{display:none}
 }
+
+/* админ-панель */
+.adm-overlay{position:fixed;inset:0;z-index:100;background:rgba(11,18,32,.6);overflow:auto;padding:20px 12px}
+.adm-login{max-width:360px;margin:12vh auto 0;background:var(--surface);border-radius:var(--r);padding:26px;box-shadow:var(--shadow)}
+.adm-login h3{margin-bottom:14px}
+.adm-box{max-width:940px;margin:0 auto;background:var(--surface);border-radius:20px;padding:22px;box-shadow:var(--shadow)}
+.adm-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;font-family:var(--head);font-size:1.15rem;color:var(--ink)}
+.adm-tabs{display:flex;gap:6px;margin-bottom:16px}
+.adm-tabs button{font:600 .9rem var(--sans);padding:8px 16px;border:1px solid var(--line);border-radius:99px;background:var(--surface);color:var(--muted);cursor:pointer}
+.adm-tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.adm-card{border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.adm-card h4{margin:18px 0 8px;font-family:var(--head);color:var(--ink)}
+.adm-box input,.adm-box select,.adm-box textarea,.adm-login input{font:inherit;width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink)}
+.adm-box textarea{resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92rem}
+.adm-box label{display:block;font-weight:500;color:var(--ink);margin-bottom:12px}
+.adm-box label select,.adm-box label input{margin-top:6px;font-weight:400}
+.adm-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.adm-row input{flex:1;min-width:180px;width:auto}
+.adm-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+.adm-msg{min-height:1.4em;margin:10px 0 0;font-size:.92rem;color:var(--bad)}
+.adm-msg.ok{color:var(--ok)}
+.adm-muted{color:var(--muted);font-size:.9rem}
+.adm-tools{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px}
+.adm-tools button{font:500 .85rem var(--sans);padding:6px 12px;border:1px solid var(--line);border-radius:8px;background:#F8FAFC;cursor:pointer;color:var(--ink)}
+.adm-tools button:hover{border-color:#B8C3D4}
+.adm-btnrow{display:grid;grid-template-columns:1.2fr .9fr 1.6fr auto;gap:8px;margin-bottom:8px}
+.adm-scroll{overflow-x:auto}
+.adm-table{width:100%;border-collapse:collapse;font-size:.92rem}
+.adm-table td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.adm-table small{display:block;color:var(--muted)}
+.adm-renum{display:flex;gap:6px;min-width:210px}
+.adm-renum input{width:110px}
+@media (max-width:640px){.adm-btnrow{grid-template-columns:1fr 1fr}.adm-box{padding:16px}}

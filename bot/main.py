@@ -17,6 +17,7 @@ from aiogram.types import (CallbackQuery, ForceReply, InlineKeyboardButton, Inli
 from aiohttp import web
 
 import config
+import admin
 import db
 from i18n import LANG_NAMES, PURPOSE_KEYS, disp_countries, disp_languages, disp_purpose, tr
 
@@ -132,6 +133,25 @@ async def set_user_lang(user_id: int, lang: str) -> None:
 async def ulang(user_id: int) -> str:
     """Язык для уведомлений пользователю, который сейчас не в диалоге."""
     return await stored_lang(user_id) or "ru"
+
+
+class BanMiddleware(BaseMiddleware):
+    """Заблокированные администратором пользователи не могут пользоваться ботом."""
+    async def __call__(self, handler, event, data):
+        user = data.get("event_from_user")
+        if user and user.id in db.banned_cache:
+            text = tr(_lang_cache.get(user.id) or guess_lang(user.language_code), "banned")
+            try:
+                if isinstance(event, Message):
+                    await event.answer(text)
+                elif isinstance(event, CallbackQuery):
+                    await event.answer(text, show_alert=True)
+                elif isinstance(event, PreCheckoutQuery):
+                    await event.answer(ok=False, error_message=text)
+            except TelegramAPIError:
+                pass
+            return None
+        return await handler(event, data)
 
 
 class LangMiddleware(BaseMiddleware):
@@ -251,6 +271,9 @@ async def notify(bot: Bot, user_id: int, text: str, markup=None) -> None:
 private = Router()
 private.message.filter(F.chat.type == ChatType.PRIVATE)
 private.callback_query.filter(F.message.chat.type == ChatType.PRIVATE)
+private.message.outer_middleware(BanMiddleware())
+private.callback_query.outer_middleware(BanMiddleware())
+private.pre_checkout_query.outer_middleware(BanMiddleware())
 private.message.middleware(LangMiddleware())
 private.callback_query.middleware(LangMiddleware())
 private.pre_checkout_query.middleware(LangMiddleware())
@@ -742,18 +765,21 @@ async def complaint_bad(cb: CallbackQuery, bot: Bot):
     if not c:
         return await cb.answer("Жалоба уже обработана", show_alert=True)
     reg = await db.get_registry(c["registry_id"])
-    await db.revoke_registry(reg["id"], f"Жалоба №{c['id']}")
-    others = await db.close_open_complaints(reg["id"], "upheld", cb.from_user.id)
+    others = await db.close_open_complaints(reg["id"], "upheld", cb.from_user.id)  # до отзыва: номер ресурса может смениться
+    revoked = await db.revoke_registry(reg["id"], f"Жалоба №{c['id']}")
+    released = revoked["released_number"] if revoked else None
     await cb.message.edit_text(
         complaint_card(c, reg) + f"\n\n<b>Решение: ресурс не в порядке.</b> Лицензия {lic(reg['id'])} отозвана. "
-                                 f"Модератор: {esc(cb.from_user.full_name)}",
+                                 + (f"Номер {lic(released)} остался у владельца. " if released else "")
+                                 + f"Модератор: {esc(cb.from_user.full_name)}",
         reply_markup=None)
     for uid in {c["user_id"], *(o["user_id"] for o in others)}:
         l = await ulang(uid)
         await notify(bot, uid, tr(l, "n_c_upheld", title=esc(reg["title"])))
     l = await ulang(reg["user_id"])
-    await notify(bot, reg["user_id"], tr(l, "n_revoked_owner", lic=lic(reg["id"]), title=esc(reg["title"])),
-                 kb([[btn(tr(l, "b_news"), url=config.NEWS_CHANNEL)]]))
+    owner_text = (tr(l, "n_revoked_owner_num", lic=lic(reg["id"]), title=esc(reg["title"]), num=lic(released))
+                  if released else tr(l, "n_revoked_owner", lic=lic(reg["id"]), title=esc(reg["title"])))
+    await notify(bot, reg["user_id"], owner_text, kb([[btn(tr(l, "b_news"), url=config.NEWS_CHANNEL)]]))
     await cb.answer("Ресурс удалён из реестра")
 
 
@@ -816,6 +842,16 @@ async def auction_list_content(user_id: int, lang: str):
     return tr(lang, "au_intro"), kb(rows)
 
 
+def min_bid_for(a) -> int:
+    """Минимальная ставка: стартовая цена для первой, дальше — шаг."""
+    return a["start_price"] if a["status"] == "idle" else config.BID_STEP
+
+
+def new_price_for(a, amount: int) -> int:
+    """Цена лота после ставки: ставки суммируются."""
+    return amount if a["status"] == "idle" else a["top_amount"] + amount
+
+
 async def lot_content(number: int, user_id: int, lang: str):
     a = await db.get_auction(number)
     if not a:
@@ -833,18 +869,15 @@ async def lot_content(number: int, user_id: int, lang: str):
         if a["status"] == "idle":
             base = a["start_price"]
             text = tr(lang, "lot_idle", lic=n, price=base)
-            amounts = [base, base + 50, base + 100]
+            labels = [(base, f"{base} ⭐"), (base + 50, f"{base + 50} ⭐"), (base + 100, f"{base + 100} ⭐")]
         else:
-            top = a["top_amount"]
-            text = tr(lang, "lot_active", lic=n, price=top, left=left_text(a["ends_at"], lang),
-                      ends=fdt(a["ends_at"]), min=top + config.BID_STEP)
-            amounts = [top + config.BID_STEP, top + 50, top + 100]
+            text = tr(lang, "lot_active", lic=n, price=a["top_amount"], left=left_text(a["ends_at"], lang),
+                      ends=fdt(a["ends_at"]), min=config.BID_STEP)
+            labels = [(x, f"+{x} ⭐") for x in (config.BID_STEP, 50, 100)]
         if a["status"] == "active" and a["top_user_id"] == user_id:
             text += "\n\n" + tr(lang, "lot_leading")
         else:
-            amounts = [x for x in amounts if x <= config.MAX_BID]
-            if amounts:
-                rows.append([btn(f"{x} ⭐", f"bid:{number}:{x}") for x in amounts])
+            rows.append([btn(label, f"bid:{number}:{x}") for x, label in labels])
             rows.append([btn(tr(lang, "b_custom"), f"bidc:{number}")])
     rows.append([btn(tr(lang, "b_back_auction"), "au:list")])
     rows.append([btn(tr(lang, "b_home"), "menu:home")])
@@ -853,27 +886,26 @@ async def lot_content(number: int, user_id: int, lang: str):
 
 async def check_bid(number: int, user_id: int, amount: int):
     """None, если ставку можно принять. Иначе (ключ_ошибки, параметры)."""
+    if user_id in db.banned_cache:
+        return "banned", {}
     a = await db.get_auction(number)
-    if not a:
+    if not a or amount > 100_000_000:  # верхняя граница только от переполнения числа
         return "bid_err_bad", {}
     if a["status"] == "sold" or (a["status"] == "active" and a["ends_at"] <= now_utc()):
         return "bid_err_ended", {}
     if a["status"] == "active" and a["top_user_id"] == user_id:
         return "bid_err_self", {}
-    min_bid = a["start_price"] if a["status"] == "idle" else a["top_amount"] + config.BID_STEP
-    if amount < min_bid:
-        return "bid_err_low", {"min": min_bid}
-    if amount > config.MAX_BID:
-        return "bid_err_max", {"max": config.MAX_BID}
+    if amount < min_bid_for(a):
+        return "bid_err_low", {"min": min_bid_for(a)}
     return None
 
 
-async def send_bid_invoice(bot: Bot, user_id: int, number: int, amount: int, lang: str) -> bool:
+async def send_bid_invoice(bot: Bot, user_id: int, number: int, amount: int, lang: str, price: int) -> bool:
     try:
         await bot.send_invoice(
             chat_id=user_id,
             title=tr(lang, "inv_title", lic=lic(number)),
-            description=tr(lang, "inv_desc", amount=amount),
+            description=tr(lang, "inv_desc", amount=amount, lic=lic(number), price=price),
             payload=f"bid:{number}:{amount}",
             currency="XTR",
             prices=[LabeledPrice(label=tr(lang, "inv_label", lic=lic(number)), amount=amount)],
@@ -909,7 +941,8 @@ async def au_bid(cb: CallbackQuery, bot: Bot, lang: str):
     err = await check_bid(number, cb.from_user.id, amount)
     if err:
         return await cb.answer(tr(lang, err[0], **err[1]), show_alert=True)
-    if await send_bid_invoice(bot, cb.from_user.id, number, amount, lang):
+    price = new_price_for(await db.get_auction(number), amount)
+    if await send_bid_invoice(bot, cb.from_user.id, number, amount, lang, price):
         await cb.answer(tr(lang, "inv_sent", amount=amount), show_alert=True)
     else:
         await cb.answer(tr(lang, "inv_fail"), show_alert=True)
@@ -918,32 +951,30 @@ async def au_bid(cb: CallbackQuery, bot: Bot, lang: str):
 @private.callback_query(F.data.regexp(r"^bidc:\d+$"))
 async def au_bid_custom(cb: CallbackQuery, state: FSMContext, lang: str):
     number = int(cb.data.split(":")[1])
-    err = await check_bid(number, cb.from_user.id, config.MAX_BID)
-    if err and err[0] != "bid_err_max":
-        return await cb.answer(tr(lang, err[0], **err[1]), show_alert=True)
     a = await db.get_auction(number)
-    min_bid = a["start_price"] if a["status"] == "idle" else a["top_amount"] + config.BID_STEP
+    err = await check_bid(number, cb.from_user.id, a["start_price"] if a else 1)
+    if err and err[0] != "bid_err_low":
+        return await cb.answer(tr(lang, err[0], **err[1]), show_alert=True)
     await state.clear()
     await state.set_state(BidForm.amount)
     await state.update_data(number=number)
-    await cb.message.answer(tr(lang, "bid_custom_prompt", min=min_bid, max=config.MAX_BID), reply_markup=cancel_kb(lang))
+    await cb.message.answer(tr(lang, "bid_custom_prompt", min=min_bid_for(a)), reply_markup=cancel_kb(lang))
     await cb.answer()
 
 
 @private.message(BidForm.amount, F.text)
 async def au_bid_amount(m: Message, state: FSMContext, bot: Bot, lang: str):
     number = (await state.get_data())["number"]
-    digits = re.sub(r"[\s,._]", "", m.text)
     a = await db.get_auction(number)
-    min_bid = a["start_price"] if a and a["status"] == "idle" else (a["top_amount"] + config.BID_STEP if a else 0)
-    if not digits.isdigit():
-        return await m.answer(tr(lang, "bid_custom_nan", min=min_bid))
+    digits = re.sub(r"[\s,._]", "", m.text)
+    if not a or not digits.isdigit():
+        return await m.answer(tr(lang, "bid_custom_nan", min=min_bid_for(a) if a else 1))
     amount = int(digits)
     err = await check_bid(number, m.from_user.id, amount)
     if err:
         return await m.answer(tr(lang, err[0], **err[1]))
     await state.clear()
-    if await send_bid_invoice(bot, m.from_user.id, number, amount, lang):
+    if await send_bid_invoice(bot, m.from_user.id, number, amount, lang, new_price_for(a, amount)):
         await m.answer(tr(lang, "inv_sent", amount=amount))
     else:
         await m.answer(tr(lang, "inv_fail"))
@@ -965,46 +996,45 @@ async def pre_checkout(q: PreCheckoutQuery, lang: str):
 async def on_paid(m: Message, bot: Bot, lang: str):
     sp = m.successful_payment
     uid = m.from_user.id
+    charge = sp.telegram_payment_charge_id
     parts = (sp.invoice_payload or "").split(":")
     if len(parts) != 3 or parts[0] != "bid" or not parts[1].isdigit():
         log.error("Неизвестный платёж: %s", sp.invoice_payload)
         await notify_mods(bot, f"⚠️ Неизвестный платёж Stars: {esc(sp.invoice_payload)}, пользователь {uid}, "
-                               f"{sp.total_amount} ⭐, charge <code>{esc(sp.telegram_payment_charge_id)}</code>")
+                               f"{sp.total_amount} ⭐, charge <code>{esc(charge)}</code>")
         return
     number = int(parts[1])
-    res = await db.place_bid(number, uid, sp.total_amount, sp.telegram_payment_charge_id, config.BID_STEP, config.AUCTION_DAYS)
+    if uid in db.banned_cache:
+        res = {"status": "banned"}
+    else:
+        res = await db.place_bid(number, uid, sp.total_amount, charge, config.BID_STEP, config.AUCTION_DAYS)
     status = res["status"]
     if status == "dup":
         return
     if status != "ok":
-        key = {"ended": "bid_err_ended", "low": "bid_err_low", "self": "bid_err_self"}.get(status, "bid_err_bad")
+        # ставку не удалось засчитать (аукцион закрыт, платёж пришёл слишком поздно и т.п.) — возвращаем звёзды
+        key = {"ended": "bid_err_ended", "low": "bid_err_low", "self": "bid_err_self", "banned": "banned"}.get(status, "bid_err_bad")
         reason = tr(lang, key, min=res.get("min", 0))
-        ok = await refund(bot, uid, sp.telegram_payment_charge_id)
+        ok = await refund(bot, uid, charge)
         await m.answer(tr(lang, "bid_refunded" if ok else "bid_refund_fail", reason=reason, amount=sp.total_amount),
                        reply_markup=kb([[btn(tr(lang, "b_back_auction"), "au:list")]]))
         if not ok:
             await notify_mods(bot, f"⚠️ Нужен ручной возврат: пользователь {uid}, {sp.total_amount} ⭐, "
-                                   f"charge <code>{esc(sp.telegram_payment_charge_id)}</code> (лот {lic(number)})")
+                                   f"charge <code>{esc(charge)}</code> (лот {lic(number)})")
         return
 
     await set_user_lang(uid, lang)
-    await m.answer(tr(lang, "bid_ok", lic=lic(number), amount=sp.total_amount, ends=fdt(res["ends_at"]),
+    await m.answer(tr(lang, "bid_ok", lic=lic(number), price=res["price"], ends=fdt(res["ends_at"]),
                       left=left_text(res["ends_at"], lang)),
                    reply_markup=kb([[btn(tr(lang, "b_back_auction"), "au:list")]]))
     if res["first"]:
         await notify_mods(bot, f"Аукцион запущен: {lic(number)}, первая ставка {sp.total_amount} ⭐, "
                                f"завершится {fdt(res['ends_at'])}.")
-    prev = res["prev"]
-    if prev:
-        ok = await refund(bot, prev["user_id"], prev["charge_id"])
-        await db.set_bid_status(prev["id"], "refunded" if ok else "refund_failed")
-        pl = await ulang(prev["user_id"])
-        await notify(bot, prev["user_id"],
-                     tr(pl, "outbid" if ok else "outbid_fail", lic=lic(number), amount=sp.total_amount, refund=prev["amount"]),
+    prev = res["prev_user"]
+    if prev and prev != uid:
+        pl = await ulang(prev)
+        await notify(bot, prev, tr(pl, "outbid", lic=lic(number), price=res["price"], min=config.BID_STEP),
                      kb([[btn(tr(pl, "b_auction"), f"au:{number}")]]))
-        if not ok:
-            await notify_mods(bot, f"⚠️ Нужен ручной возврат: пользователь {prev['user_id']}, {prev['amount']} ⭐, "
-                                   f"charge <code>{esc(prev['charge_id'])}</code> (лот {lic(number)}, ставку перебили)")
 
 
 async def auction_worker(bot: Bot) -> None:
@@ -1136,9 +1166,17 @@ def pub(r) -> dict:
 @web.middleware
 async def cors(request: web.Request, handler):
     resp = web.Response() if request.method == "OPTIONS" else await handler(request)
-    resp.headers["Access-Control-Allow-Origin"] = "*"
-    resp.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
-    resp.headers["Cache-Control"] = "public, max-age=30"
+    if request.path.startswith("/api/admin"):
+        # админ-API доступно только со страницы сайта и никогда не кэшируется
+        resp.headers["Access-Control-Allow-Origin"] = config.SITE_URL
+        resp.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        resp.headers["Cache-Control"] = "no-store"
+        resp.headers["Vary"] = "Origin"
+    else:
+        resp.headers["Access-Control-Allow-Origin"] = "*"
+        resp.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+        resp.headers["Cache-Control"] = "public, max-age=30"
     return resp
 
 
@@ -1189,7 +1227,8 @@ async def main():
     dp.include_router(mod)
     dp.include_router(private)
 
-    app = web.Application(middlewares=[cors])
+    app = web.Application(middlewares=[cors], client_max_size=60 * 1024 * 1024)
+    admin.setup(app, bot)
     app.router.add_get("/health", health)
     app.router.add_get("/api/registry", api_list)
     app.router.add_get("/api/registry/{ident}", api_item)

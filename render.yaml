@@ -23,3 +23,5 @@ services:
         sync: false
       - key: SITE_URL
         sync: false
+      - key: ADMIN_CODE
+        sync: false

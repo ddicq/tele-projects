@@ -17,6 +17,26 @@
     return r.json();
   }
 
+  // ----- скрытый вход в админ-панель: 10 нажатий на значок в шапке -----
+  const mark = $(".brand .mark");
+  if (mark) {
+    let taps = 0, timer;
+    const openAdmin = () => {
+      if (window.TP_ADMIN) return window.TP_ADMIN.open();
+      const s = document.createElement("script");
+      s.src = "/js/admin.js";
+      s.onload = () => window.TP_ADMIN.open();
+      document.head.appendChild(s);
+    };
+    mark.addEventListener("click", e => {
+      e.preventDefault();
+      clearTimeout(timer);
+      if (++taps >= 10) { taps = 0; openAdmin(); return; }
+      // одиночное нажатие по-прежнему ведёт на главную
+      timer = setTimeout(() => { if (taps === 1) location.href = "/"; taps = 0; }, 700);
+    });
+  }
+
   // ----- вкладки проекта -----
   const tabs = $("#tabs");
   if (tabs) {
